@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mapper.member">
+
+  <select id="login" parameterType="com.myspring.myproject.vo.MemberVO"
+          resultType="com.myspring.myproject.vo.MemberVO">
+    SELECT id, pwd, name, email
+    FROM t_member
+    WHERE id = #{id} AND pwd = #{pwd}
+  </select>
+
+  <select id="listMembers" resultType="com.myspring.myproject.vo.MemberVO">
+    SELECT id, pwd, name, email
+    FROM t_member
+    ORDER BY name
+  </select>
+
+  <select id="searchMemberList" parameterType="string"
+          resultType="com.myspring.myproject.vo.MemberVO">
+    SELECT id, pwd, name, email
+    FROM t_member
+    WHERE name LIKE CONCAT('%', #{value}, '%')
+    ORDER BY name
+  </select>
+
+  <insert id="addMember" parameterType="com.myspring.myproject.vo.MemberVO">
+    INSERT INTO t_member (id, pwd, name, email)
+    VALUES (#{id}, #{pwd}, #{name}, #{email})
+  </insert>
+
+  <update id="updateMember" parameterType="com.myspring.myproject.vo.MemberVO">
+    UPDATE t_member
+    SET pwd = #{pwd}, name = #{name}, email = #{email}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="delMember" parameterType="string">
+    DELETE FROM t_member WHERE id = #{id}
+  </delete>
+
+  <select id="countById" parameterType="string" resultType="int">
+    SELECT COUNT(*) FROM t_member WHERE id = #{id}
+  </select>
+
+  <!-- ✅ 게시판 쿼리는 전부 mapper.board 로 이동. 여기에는 두지 마세요. -->
+
+</mapper>

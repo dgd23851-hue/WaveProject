@@ -1,0 +1,338 @@
+html,
+body {
+  height: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #d5dae0;
+  font-family: 'Pretendard', 'Noto Sans KR', 'sans-serif';
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mypage-wrap {
+  display: flex;
+  flex-direction: row;
+  gap: 36px;
+  max-width: 1050px;
+  margin: 46px auto 0 auto;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.mypage-side {
+  min-width: 230px;
+  max-width: 270px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.profile-card {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 3px 20px 0 rgba(120, 130, 180, 0.10);
+  padding: 74px 18px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.profile-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #d5dae0 url('images/guest_icon.svg') center/40px no-repeat;
+  margin-bottom: 10px;
+}
+
+.profile-name {
+  font-size: 1.13em;
+  font-weight: 700;
+  color: #2a344b;
+  margin-bottom: 16px;
+}
+
+.profile-desc {
+  font-size: 0.98em;
+  color: #9da9bb;
+  margin-bottom: 20px;
+}
+
+.mypage-menu {
+  margin: 0;
+  padding: 10px 0 0 0;
+  list-style: none;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1.5px 8px 0 rgba(120, 140, 170, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.mypage-menu li {
+  font-size: 1.01em;
+  color: #68708c;
+  padding: 10px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+
+.mypage-menu li.on,
+.mypage-menu li:hover {
+  background: #e6efff;
+  color: #2270d3;
+  font-weight: 600;
+}
+
+.mypage-main {
+  flex: 1 1 350px;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.cardbox {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 4px 24px 0 rgba(130, 150, 200, 0.10);
+  padding: 34px 28px 22px 28px;
+  width: 420px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardbox-title {
+  font-size: 1.17em;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  color: #27395c;
+  letter-spacing: -0.5px;
+}
+
+.card-section {
+  display: none;
+}
+
+#mypage-section {
+  display: block;
+}
+
+.empty-news {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 45px 0 16px 0;
+  background: #d5dae0;
+  border-radius: 15px;
+  margin-bottom: 12px;
+  min-height: 120px;
+  font-size: 1.09em;
+  color: #97a3b9;
+}
+
+.heart-ico {
+  font-size: 2.15em;
+  color: #fa798b;
+  margin-bottom: 4px;
+}
+
+.mypage-info-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f5f7fa;
+  border-radius: 15px;
+  padding: 15px 0 32px 0;
+  margin-bottom: 12px;
+  min-height: 110px;
+  color: #475a7e;
+}
+
+.info-ico {
+  font-size: 2.4em;
+  margin-bottom: 6px;
+}
+
+.info-title {
+  font-weight: 700;
+  font-size: 1.13em;
+  margin-bottom: 6px;
+}
+
+.info-desc {
+  font-size: 1em;
+  color: #7b89a5;
+  text-align: center;
+  margin-bottom: 13px;
+  line-height: 1.55;
+}
+
+.mypage-footer {
+  margin-top: auto;
+  text-align: center;
+  font-size: 1.01em;
+  color: #b2b9c7;
+  padding-bottom: 11px;
+  width: 100%;
+  background: none;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 220px;
+  padding: 9px 13px;
+  margin: 5px 0 14px 0;
+  font-size: 1.07em;
+  border: 1.3px solid #24292f;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  outline: none;
+  transition: border 0.18s;
+  box-sizing: border-box;
+}
+
+/* ----- 버튼(로그인, 저장 등) ----- */
+button,
+.profile-card button,
+input[type="submit"] {
+  border: 1.5px solid #222;
+  background: #fff;
+  color: #222;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 10px 0;
+  min-width: 130px;
+  /* 더 넓게 */
+  font-size: 1.08em;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(120, 130, 140, 0.08);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+
+button:hover,
+.profile-card button:hover,
+input[type="submit"]:hover,
+button:active,
+.profile-card button:active,
+input[type="submit"]:active {
+  background: #222;
+  color: #fff;
+  border-color: #222;
+  box-shadow: 0 4px 14px rgba(60, 60, 60, 0.08);
+}
+
+input::placeholder {
+  color: #8b95a5;
+  opacity: 1;
+}
+
+.form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.login-btn a {
+  color: inherit;
+  text-decoration: none;
+}
+
+
+
+/* 반응형 */
+@media (max-width: 950px) {
+  .mypage-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .mypage-side {
+    flex-direction: row;
+    gap: 10px;
+    min-width: 0;
+    max-width: 99vw;
+  }
+
+  .profile-card {
+    padding: 14px 7px 11px 7px;
+    width: 120px;
+  }
+
+  .profile-img {
+    width: 36px;
+    height: 36px;
+    background-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .mypage-menu {
+    padding: 4px 0 0 0;
+    border-radius: 11px;
+  }
+
+  .mypage-menu li {
+    font-size: 0.93em;
+    padding: 7px 10px;
+    border-radius: 6px;
+  }
+
+  .cardbox {
+    width: 97vw;
+    padding: 14px 2vw 10px 2vw;
+  }
+}
+
+@media (max-width: 540px) {
+  .mypage-wrap {
+    margin-top: 7px;
+  }
+
+  .profile-card {
+    width: 88px;
+  }
+
+  .cardbox {
+    min-width: 0;
+  }
+
+  .mypage-footer {
+    font-size: 0.87em;
+  }
+}

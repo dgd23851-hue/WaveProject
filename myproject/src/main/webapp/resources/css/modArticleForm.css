@@ -1,0 +1,394 @@
+/* =======================================
+   Mod Article Form v3 (scoped .ma2-*)
+   Light theme only / No dark auto
+   ======================================= */
+:root {
+	--ink: #111827;
+	--dim: #4b5563;
+	--line: #e5e7eb;
+	--bg: #ffffff;
+	--chip: #f3f4f6;
+	--accent: #2563eb;
+	--accent-d: #1e40af;
+	--danger: #ef4444;
+	--shadow: 0 8px 24px rgba(2, 6, 23, .08);
+}
+
+.ma2-main {
+	font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR",
+		"Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Segoe UI", Roboto,
+		"Helvetica Neue", Arial, sans-serif;
+	color: var(--ink);
+	background: #fff;
+	letter-spacing: -.2px
+}
+
+.ma2-container {
+	max-width: 980px;
+	margin: 0 auto;
+	padding: 0 16px
+}
+
+.ma2-head {
+	padding: 14px 0 10px;
+	border-bottom: 1px solid var(--line)
+}
+
+.ma2-title {
+	margin: 0 0 6px;
+	font-size: 1.6rem;
+	font-weight: 800
+}
+
+.ma2-breadcrumb {
+	color: var(--dim);
+	font-size: .92rem
+}
+
+.ma2-breadcrumb a {
+	text-decoration: none;
+	color: inherit
+}
+
+.ma2-breadcrumb a:hover {
+	color: var(--ink);
+	text-decoration: underline
+}
+
+.ma2-breadcrumb .sep {
+	margin: 0 6px;
+	color: #9ca3af
+}
+/* Form */
+.ma2-form {
+	padding: 16px 0 26px
+}
+
+.ma2-field {
+	margin: 14px 0
+}
+
+.ma2-field>label {
+	display: block;
+	font-weight: 800;
+	margin-bottom: 6px
+}
+
+.ma2-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px
+}
+
+@media ( max-width :720px) {
+	.ma2-row {
+		grid-template-columns: 1fr
+	}
+}
+
+input[type="text"], input[type="file"], select, textarea {
+	width: 100%;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	padding: 10px 12px;
+	font: inherit;
+	outline: none;
+	background: #fff
+}
+
+input[type="text"]:focus, select:focus, textarea:focus {
+	border-color: #cbd5e1;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, .12)
+}
+/* Title counter */
+.ma2-titleRow {
+	position: relative
+}
+
+.ma2-counter {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: .85rem;
+	color: #6b7280
+}
+/* Uploader */
+.ma2-uploader {
+	position: relative
+}
+
+.ma2-drop {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-height: 160px;
+	border: 2px dashed var(--line);
+	border-radius: 12px;
+	background: #fbfdff;
+	position: relative;
+	overflow: hidden;
+	padding: 10px
+}
+
+.ma2-drop.is-drag {
+	border-color: var(--accent)
+}
+
+.ma2-drop__header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap
+}
+
+.ma2-choose {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 34px;
+	padding: 0 12px;
+	border-radius: 10px;
+	border: 1px solid var(--accent);
+	background: var(--accent);
+	color: #fff;
+	font-weight: 800;
+	cursor: pointer
+}
+
+.ma2-choose:hover {
+	background: var(--accent-d);
+	border-color: var(--accent-d)
+}
+
+.ma2-drop__hint {
+	color: var(--dim);
+	font-size: .92rem
+}
+
+#image {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	cursor: pointer
+}
+/* Card previews */
+.ma2-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 10px
+}
+
+.ma2-card {
+	border: 1px solid var(--line);
+	background: #fff;
+	border-radius: 10px;
+	overflow: hidden;
+	box-shadow: 0 2px 10px rgba(2, 6, 23, .04)
+}
+
+.ma2-card img {
+	width: 100%;
+	height: 100px;
+	object-fit: cover;
+	display: block
+}
+
+.ma2-card__foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 6px 8px
+}
+
+.ma2-card__name {
+	font-size: .86rem;
+	color: #374151;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 70%
+}
+
+.ma2-card__size {
+	font-size: .8rem;
+	color: #6b7280
+}
+/* Current image (server) */
+.ma2-current {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 8px
+}
+
+.ma2-current img {
+	width: 120px;
+	height: 80px;
+	object-fit: cover;
+	border: 1px solid var(--line);
+	border-radius: 8px
+}
+
+.ma2-remove {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: .95rem;
+	color: var(--dim)
+}
+/* Textarea */
+textarea {
+	line-height: 1.75;
+	min-height: 300px;
+	resize: vertical
+}
+/* Actions */
+.ma2-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 18px
+}
+
+.ma2-flex {
+	flex: 1
+}
+
+.ma2-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 38px;
+	padding: 0 14px;
+	border-radius: 10px;
+	border: 1px solid var(--accent);
+	background: var(--accent);
+	color: #fff;
+	font-weight: 800;
+	text-decoration: none;
+	cursor: pointer;
+	line-height: 1;
+	transition: .18s ease
+}
+
+.ma2-btn:hover {
+	background: var(--accent-d);
+	border-color: var(--accent-d)
+}
+
+.ma2-btn.is-outline {
+	background: #fff;
+	color: var(--ink);
+	border-color: var(--line)
+}
+
+.ma2-btn.is-outline:hover {
+	border-color: #cbd5e1
+}
+
+.ma2-btn.is-ghost {
+	background: transparent;
+	border-color: transparent;
+	color: var(--dim)
+}
+
+.ma2-btn.is-primary {
+	background: var(--accent);
+	border-color: var(--accent)
+}
+/* Modal */
+.ma2-modal {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, .55);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 200
+}
+
+.ma2-modal.is-open {
+	display: flex
+}
+
+.ma2-modal__card {
+	width: min(860px, 92vw);
+	background: #fff;
+	border-radius: 14px;
+	box-shadow: var(--shadow);
+	overflow: hidden
+}
+
+.ma2-modal__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--line)
+}
+
+.ma2-modal__body {
+	padding: 14px
+}
+
+.ma2-modal__foot {
+	padding: 12px 14px;
+	border-top: 1px solid var(--line);
+	display: flex;
+	justify-content: flex-end
+}
+
+.ma2-close {
+	border: 0;
+	background: #fff;
+	width: 34px;
+	height: 34px;
+	border-radius: 8px;
+	cursor: pointer
+}
+/* Preview content */
+.pv-title {
+	margin: 0 0 4px;
+	font-weight: 800;
+	font-size: 1.4rem
+}
+
+.pv-meta {
+	color: #6b7280;
+	margin-bottom: 8px
+}
+
+.pv-figure img {
+	width: 100%;
+	height: 320px;
+	object-fit: cover;
+	border-radius: 10px;
+	border: 1px solid var(--line)
+}
+
+.pv-figure.is-hidden {
+	display: none
+}
+
+.pv-content {
+	line-height: 1.8
+}
+/* Toast */
+.ma2-toast {
+	position: fixed;
+	left: 50%;
+	transform: translateX(-50%);
+	bottom: 22px;
+	background: #111827;
+	color: #fff;
+	padding: 10px 14px;
+	border-radius: 10px;
+	box-shadow: var(--shadow);
+	display: none;
+	z-index: 350
+}
+
+.ma2-toast.is-show {
+	display: block
+}

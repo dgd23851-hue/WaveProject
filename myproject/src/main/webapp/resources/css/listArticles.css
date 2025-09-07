@@ -1,0 +1,436 @@
+/* =====================================================
+   Wave News • Newsroom List Design (SCOPED / LIGHT ONLY)
+   Scope: inside .cl-main only  |  No dark-mode, no :root
+   Load AFTER your existing list CSS to override.
+   ===================================================== */
+
+/* ---------- Tokens (scoped) ---------- */
+.cl-main {
+	--bg: #ffffff;
+	--card: #ffffff;
+	--ink: #0b1223;
+	--muted: #475569;
+	--line: #e2e8f0;
+	--soft: #f8fafc;
+	--accent: #0ea5e9;
+	--accent-d: #0284c7;
+	--brand: #111827;
+	--shadow: 0 1px 2px rgba(2, 6, 23, .06), 0 6px 24px rgba(2, 6, 23, .06);
+	--shadow-h: 0 2px 4px rgba(2, 6, 23, .08), 0 10px 28px
+		rgba(2, 6, 23, .10);
+}
+
+/* ---------- Global (font + smoothing) ---------- */
+.cl-main {
+	font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR",
+		"Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Segoe UI", Roboto,
+		"Helvetica Neue", Arial, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	letter-spacing: -.2px;
+	background: var(--bg);
+	color: var(--ink);
+	padding: 12px 0 24px;
+}
+
+.cl-main .cl-container {
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 0 16px
+}
+
+/* ---------- Header area ---------- */
+.cl-main .cl-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	margin: 6px 0 14px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--line);
+}
+
+.cl-main .cl-title {
+	margin: 0;
+	font-size: 1.6rem;
+	font-weight: 900;
+	letter-spacing: .1px;
+	color: var(--brand);
+}
+
+/* controls */
+.cl-main .cl-controls {
+	margin-left: auto;
+	display: flex;
+	gap: 8px;
+	align-items: center
+}
+
+.cl-main .cl-search, .cl-main .cl-sort {
+	height: 38px;
+	padding: 0 12px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: #fff;
+	font: inherit;
+}
+
+.cl-main .cl-search:focus, .cl-main .cl-sort:focus {
+	outline: 2px solid rgba(14, 165, 233, .25);
+	outline-offset: 2px
+}
+
+/* buttons (unified inside list page only) */
+.cl-main .cl-btn, .cl-main .aw-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 38px;
+	padding: 0 14px;
+	border-radius: 12px;
+	border: 1px solid var(--accent);
+	background: var(--accent);
+	color: #fff;
+	font-weight: 900;
+	text-decoration: none;
+	cursor: pointer;
+	box-shadow: var(--shadow);
+	transition: background .18s ease, border-color .18s ease, transform .12s
+		ease, box-shadow .18s ease;
+}
+
+.cl-main .cl-btn:hover, .cl-main .aw-btn:hover {
+	background: var(--accent-d);
+	border-color: var(--accent-d);
+	box-shadow: var(--shadow-h)
+}
+
+.cl-main .cl-btn:active, .cl-main .aw-btn:active {
+	transform: translateY(.5px)
+}
+
+.cl-main .cl-btn.is-outline, .cl-main .aw-btn.is-outline {
+	background: #fff;
+	color: var(--ink);
+	border-color: var(--line);
+	box-shadow: none
+}
+
+.cl-main .cl-btn.is-outline:hover, .cl-main .aw-btn.is-outline:hover {
+	border-color: #cbd5e1
+}
+
+/* ---------- Subtabs ---------- */
+.cl-main .cl-subtabs {
+	position: relative;
+	border-bottom: 1px solid var(--line);
+	margin: 6px 0 14px
+}
+
+.cl-main .cl-subtabs__row {
+	display: flex;
+	gap: 10px;
+	overflow-x: auto;
+	padding: 8px 0;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 
+		24px), transparent 100%);
+}
+
+.cl-main .cl-subtabs__row::-webkit-scrollbar {
+	display: none
+}
+
+.cl-main .cl-subtabs::before, .cl-main .cl-subtabs::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 24px;
+	pointer-events: none;
+	background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+}
+
+.cl-main .cl-subtabs::before {
+	left: 0
+}
+
+.cl-main .cl-subtabs::after {
+	right: 0;
+	transform: scaleX(-1)
+}
+
+.cl-main .cl-tab {
+	display: inline-flex;
+	align-items: center;
+	height: 34px;
+	padding: 0 14px;
+	border-radius: 999px;
+	background: #f6f8fc;
+	border: 1px solid var(--line);
+	color: var(--ink);
+	text-decoration: none;
+	font-weight: 800;
+	white-space: nowrap;
+	transition: background .18s ease, border-color .18s ease, color .18s
+		ease;
+}
+
+.cl-main .cl-tab:hover {
+	background: #eef2ff;
+	border-color: #dbeafe
+}
+
+.cl-main .cl-tab.is-active {
+	background: var(--ink);
+	border-color: var(--ink);
+	color: #fff
+}
+
+/* ---------- Sections ---------- */
+.cl-main .cl-sec {
+	margin: 22px 0 10px
+}
+
+.cl-main .cl-sec__head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	margin-bottom: 10px
+}
+
+.cl-main .cl-sec__title {
+	margin: 0;
+	font-size: 1.15rem;
+	font-weight: 900;
+	color: var(--brand)
+}
+
+.cl-main .cl-sec__more {
+	color: var(--muted);
+	text-decoration: none;
+	font-weight: 800
+}
+
+.cl-main .cl-sec__more:hover {
+	color: var(--ink);
+	text-decoration: underline
+}
+
+/* grid reuses card layout */
+.cl-main .cl-list, .cl-main .cl-sec__grid {
+	list-style: none;
+	margin: 8px 0 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
+}
+
+@media ( max-width : 900px) {
+	.cl-main .cl-list, .cl-main .cl-sec__grid {
+		grid-template-columns: 1fr
+	}
+}
+
+/* ---------- Card (horizontal) ---------- */
+.cl-main .cl-item {
+	display: grid;
+	grid-template-columns: 180px 1fr;
+	gap: 14px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	overflow: hidden;
+	background: var(--card);
+	box-shadow: var(--shadow);
+	transition: transform .12s ease, box-shadow .18s ease, border-color .18s
+		ease;
+}
+
+.cl-main .cl-item:hover {
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-h);
+	border-color: #dbe3f0
+}
+
+/* thumbnail */
+.cl-main .cl-thumb {
+	display: block;
+	position: relative;
+	background: #f1f5f9
+}
+
+.cl-main .cl-thumb img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover
+}
+
+.cl-main .cl-thumb__placeholder {
+	position: relative;
+	height: 100%;
+	display: grid;
+	place-items: center;
+	color: #94a3b8;
+	font-weight: 800
+}
+
+.cl-main .cl-thumb::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, rgba(2, 6, 23, 0) 60%,
+		rgba(2, 6, 23, .05));
+	pointer-events: none;
+}
+
+/* body */
+.cl-main .cl-body {
+	padding: 12px 14px
+}
+
+.cl-main .cl-cat {
+	display: inline-flex;
+	align-items: center;
+	height: 26px;
+	padding: 0 10px;
+	font-size: .78rem;
+	font-weight: 800;
+	color: #1e3a8a;
+	background: #eef2ff;
+	border: 1px solid #dbeafe;
+	border-radius: 999px;
+	text-decoration: none;
+	margin-bottom: 8px;
+}
+
+.cl-main .cl-cat:hover {
+	background: #e2e8ff
+}
+
+.cl-main .cl-title__h3 {
+	margin: 4px 0 8px;
+	font-size: 1.05rem;
+	line-height: 1.35
+}
+
+.cl-main .cl-title__h3 a {
+	color: var(--ink);
+	text-decoration: none;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden
+}
+
+.cl-main .cl-title__h3 a:hover {
+	text-decoration: underline
+}
+
+.cl-main .cl-meta {
+	color: #64748b;
+	font-size: .82rem
+}
+
+.cl-main .cl-meta .sep {
+	margin: 0 6px;
+	color: #cbd5e1
+}
+
+/* lead emphasis */
+@media ( min-width : 901px) {
+	.cl-main .cl-sec__grid>li:first-child {
+		grid-column: span 2;
+	}
+	.cl-main .cl-sec__grid>li:first-child .cl-item {
+		grid-template-columns: 300px 1fr;
+	}
+	.cl-main .cl-sec__grid>li:first-child .cl-title__h3 {
+		font-size: 1.2rem
+	}
+}
+
+/* ---------- Empty state & Pagination ---------- */
+.cl-main .cl-empty {
+	padding: 40px 0;
+	text-align: center;
+	color: #64748b
+}
+
+.cl-main .cl-paging {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin: 22px 0 8px
+}
+
+.cl-main .cl-page {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 12px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: #fff;
+	color: var(--ink);
+	text-decoration: none;
+	font-weight: 800;
+	transition: border-color .18s ease, color .18s ease, transform .12s ease;
+}
+
+.cl-main .cl-page:hover {
+	border-color: var(--accent);
+	color: var(--accent-d)
+}
+
+.cl-main .cl-page__status {
+	color: #64748b
+}
+
+/* ---------- FAB (list page only) ---------- */
+.cl-main .aw-fab {
+	position: fixed;
+	right: 18px;
+	bottom: 18px;
+	z-index: 60;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 52px;
+	height: 52px;
+	padding: 0 18px;
+	border-radius: 999px;
+	background: var(--accent);
+	color: #fff;
+	font-weight: 900;
+	text-decoration: none;
+	box-shadow: 0 10px 24px rgba(2, 6, 23, .18);
+}
+
+.cl-main .aw-fab:hover {
+	background: var(--accent-d)
+}
+
+.cl-main .aw-fab:active {
+	transform: translateY(1px)
+}
+
+@media ( max-width :720px) {
+	.cl-main .aw-fab {
+		right: 14px;
+		bottom: 14px;
+		height: 46px;
+		min-width: 46px;
+		padding: 0 14px
+	}
+}
+
+/* ---------- Small screens ---------- */
+@media ( max-width : 560px) {
+	.cl-main .cl-item {
+		grid-template-columns: 120px 1fr
+	}
+}

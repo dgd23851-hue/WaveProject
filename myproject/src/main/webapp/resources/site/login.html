@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>로그인 | WAVE 뉴스</title>
+  <link rel="stylesheet" href="/myproject/resources/css/login.css" />
+</head>
+<body>
+  <div class="login-bg">
+    <div class="login-container">
+      <div class="login-tabs">
+        <button class="tab-btn active" id="loginTab" type="button">로그인</button>
+        <button class="tab-btn" id="signupTab" type="button">회원가입</button>
+      </div>
+
+      <!-- 로그인 폼 (POST /member/login.do) -->
+      <form class="login-form" id="loginForm" method="post" action="<c:url value='/member/mylogin.do'/>">
+        <label for="login-id">아이디</label>
+        <input type="text" id="login-id" name="id" placeholder="아이디" autocomplete="username" required />
+
+        <label for="login-pw">비밀번호</label>
+        <input type="password" id="login-pw" name="pwd" placeholder="비밀번호" autocomplete="current-password" required />
+
+        <button type="submit" class="login-action-btn">로그인</button>
+      </form>
+
+      <!-- 회원가입 폼 (POST /member/addMember.do) -->
+      <form class="signup-form" id="signupForm"
+            method="post"
+            action="/myproject/member/addMember.do"
+            style="display: none;"
+            onsubmit="return validateSignup();">
+        <label for="signup-id">아이디</label>
+        <input type="text" id="signup-id" name="id" placeholder="아이디" autocomplete="username" required />
+
+        <label for="signup-pw">비밀번호</label>
+        <input type="password" id="signup-pw" name="pwd" placeholder="비밀번호" autocomplete="new-password" required />
+
+        <label for="signup-pw2">비밀번호 확인</label>
+        <!-- 확인용은 서버 전송 불필요: name 생략 -->
+        <input type="password" id="signup-pw2" placeholder="비밀번호 확인" autocomplete="new-password" required />
+
+        <label for="signup-name">이름</label>
+        <input type="text" id="signup-name" name="name" placeholder="이름" required />
+        
+        <label for="signup-name">생일</label>
+        <input type="text" id="signup-name" name="joindate" placeholder="생일" required />
+
+        <label for="signup-email">이메일</label>
+        <input type="email" id="signup-email" name="email" placeholder="이메일" required />
+
+        <button type="submit" class="login-action-btn">회원가입</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // 탭 전환
+    const loginTab   = document.getElementById('loginTab');
+    const signupTab  = document.getElementById('signupTab');
+    const loginForm  = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+
+    loginTab.onclick = function () {
+      loginTab.classList.add('active');
+      signupTab.classList.remove('active');
+      loginForm.style.display  = '';
+      signupForm.style.display = 'none';
+    };
+
+    signupTab.onclick = function () {
+      signupTab.classList.add('active');
+      loginTab.classList.remove('active');
+      loginForm.style.display  = 'none';
+      signupForm.style.display = '';
+    };
+
+    // 회원가입 비밀번호 일치 체크
+    function validateSignup() {
+      const pw  = document.getElementById('signup-pw').value.trim();
+      const pw2 = document.getElementById('signup-pw2').value.trim();
+      if (pw !== pw2) {
+        alert('비밀번호가 일치하지 않습니다.');
+        document.getElementById('signup-pw2').focus();
+        return false;
+      }
+      return true; // 통과하면 서버로 POST
+    }
+  </script>
+</body>
+</html>

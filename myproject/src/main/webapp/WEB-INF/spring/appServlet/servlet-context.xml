@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans
+  xmlns:beans="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:mvc="http://www.springframework.org/schema/mvc"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/beans   http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/mvc     http://www.springframework.org/schema/mvc/spring-mvc.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+  <!-- @Controller 어노테이션 활성화 -->
+  <mvc:annotation-driven/>
+
+  <!-- 정적 리소스 핸들러 (반드시 /> 로 self-closing) -->
+  <mvc:resources mapping="/resources/**" location="/resources/" />
+  <mvc:resources mapping="/article_image/**" location="/article_image/"/>
+
+  <!-- 웹 계층만 스캔 (Service/Repository는 root-context에서) -->
+  <context:component-scan base-package="com.myspring.myproject" use-default-filters="false">
+    <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+  </context:component-scan>
+
+  <!-- Tiles 설정: classpath의 두 파일을 명시적으로 등록 -->
+  <beans:bean id="tilesConfigurer" class="org.springframework.web.servlet.view.tiles2.TilesConfigurer">
+    <beans:property name="definitions">
+      <beans:list>
+        <beans:value>classpath:/tiles/tiles_member.xml</beans:value>
+        <beans:value>classpath:/tiles/tiles_board.xml</beans:value>
+        <!-- 또는 한 줄로: classpath*:/tiles/tiles_*.xml -->
+      </beans:list>
+    </beans:property>
+    <beans:property name="checkRefresh" value="true"/>
+    <beans:property name="preparerFactoryClass"
+                    value="org.springframework.web.servlet.view.tiles2.SpringBeanPreparerFactory"/>
+  </beans:bean>
+
+  <!-- Tiles 뷰 리졸버 (우선순위 0) -->
+  <beans:bean id="tilesViewResolver" class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+    <beans:property name="order" value="0"/>
+    <beans:property name="viewClass" value="org.springframework.web.servlet.view.tiles2.TilesView"/>
+  </beans:bean>
+
+  <!-- JSP 백업 리졸버 (Tiles가 아닌 뷰용, 우선순위 1) -->
+  <beans:bean id="jspViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+    <beans:property name="prefix" value="/WEB-INF/views/"/>
+    <beans:property name="suffix" value=".jsp"/>
+    <beans:property name="order"  value="1"/>
+  </beans:bean>
+
+  <!-- 파일 업로드 설정 (필요 시) -->
+  <beans:bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+    <beans:property name="defaultEncoding" value="utf-8"/>
+    <beans:property name="maxUploadSize"  value="10485760"/>
+  </beans:bean>
+
+</beans:beans>
