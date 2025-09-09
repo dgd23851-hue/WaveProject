@@ -35,7 +35,7 @@
   <!-- Masthead -->
   <div class="nh-masthead">
     <div class="nh-container nh-masthead__inner">
-      <a class="nh-logo" href="<c:url value='/'/>" aria-label="홈으로">
+      <a class="nh-logo" href="<c:url value='/main.do'/>" aria-label="홈으로">
         <span class="nh-logo__mark">W</span>
         <span class="nh-logo__type">Wave News</span>
       </a>
