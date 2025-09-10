@@ -3,6 +3,7 @@ package com.myspring.myproject.board.service;
 import java.util.List;
 import java.util.Map;
 
+import com.myspring.myproject.board.dto.CommentDTO;
 import com.myspring.myproject.board.vo.ArticleVO;
 
 public interface BoardService {

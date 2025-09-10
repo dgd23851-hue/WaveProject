@@ -1,48 +1,76 @@
 package com.myspring.myproject.board.dto;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class CommentDTO {
-    private long id;                 // 댓글 PK
-    private int articleNo;           // 원글 번호
-    private Long parentId;           // 부모 댓글(대댓글용), 최상위면 null
-    private String authorName;       // 작성자 표시명
-    private String content;          // 내용(서버에서 XSS 필터링 권장)
-    private Date createdAt;          // 작성일시
-    private boolean own;             // 로그인 사용자 본인 댓글 여부
 
-    private List<ImageDTO> attachments = new ArrayList<>(); // 이미지 첨부
-    private List<CommentDTO> replies = new ArrayList<>();    // 대댓글
+	private Long id;
+	private Integer articleNo; // 컨트롤러의 setArticleNo와 맞춤 (또는 articleNO로 모두 통일)
+	private Long parentId;
+	private String writer;
+	private String content;
+	private LocalDateTime createdAt;
+	private List<CommentDTO> replies = new ArrayList<>();
 
-    public CommentDTO() {}
+	public CommentDTO() {
+	} // ★ 기본 생성자
 
-    // --- getters / setters ---
-    public long getId() { return id; }
-    public void setId(long id) { this.id = id; }
+	// --- Getter/Setter ---
+	public Long getId() {
+		return id;
+	}
 
-    public int getArticleNo() { return articleNo; }
-    public void setArticleNo(int articleNo) { this.articleNo = articleNo; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public Long getParentId() { return parentId; }
-    public void setParentId(Long parentId) { this.parentId = parentId; }
+	public Integer getArticleNo() {
+		return articleNo;
+	}
 
-    public String getAuthorName() { return authorName; }
-    public void setAuthorName(String authorName) { this.authorName = authorName; }
+	public void setArticleNo(Integer articleNo) {
+		this.articleNo = articleNo;
+	}
 
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
+	public Long getParentId() {
+		return parentId;
+	}
 
-    public Date getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
+	public void setParentId(Long parentId) {
+		this.parentId = parentId;
+	}
 
-    public boolean isOwn() { return own; }
-    public void setOwn(boolean own) { this.own = own; }
+	public String getWriter() {
+		return writer;
+	}
 
-    public List<ImageDTO> getAttachments() { return attachments; }
-    public void setAttachments(List<ImageDTO> attachments) { this.attachments = attachments; }
+	public void setWriter(String writer) {
+		this.writer = writer;
+	}
 
-    public List<CommentDTO> getReplies() { return replies; }
-    public void setReplies(List<CommentDTO> replies) { this.replies = replies; }
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public List<CommentDTO> getReplies() {
+		return replies;
+	}
+
+	public void setReplies(List<CommentDTO> replies) {
+		this.replies = replies;
+	}
 }

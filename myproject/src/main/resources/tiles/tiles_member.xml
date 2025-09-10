@@ -33,7 +33,7 @@
 		<put-attribute name="footer"
 			value="/WEB-INF/views/common/footer.jsp" />
 	</definition>
-  
+
 	<!-- 인트로 페이지를 위한 레이아웃 -->
 	<definition name="homeLayout"
 		template="/WEB-INF/views/common/layout2.jsp">
@@ -67,6 +67,14 @@
 		<put-attribute name="body"
 			value="/WEB-INF/views/member/listMembers.jsp" />
 	</definition>
+
+	<!-- 마이페이지 개별 뷰 -->
+	<definition name="member/mypage" extends="layout">
+		<put-attribute name="title" value="마이페이지" />
+		<put-attribute name="body"
+			value="/WEB-INF/views/member/mypage.jsp" />
+	</definition>
+
 
 	<definition name="/loginForm" extends="homeLayout">
 		<put-attribute name="title" value="로그인창" />

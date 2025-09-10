@@ -44,6 +44,4 @@
     SELECT COUNT(*) FROM t_member WHERE id = #{id}
   </select>
 
-  <!-- ✅ 게시판 쿼리는 전부 mapper.board 로 이동. 여기에는 두지 마세요. -->
-
 </mapper>
