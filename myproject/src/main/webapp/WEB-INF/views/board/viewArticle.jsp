@@ -1,474 +1,272 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8" isELIgnored="false"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
-<%-- ==============================
-     Bind Article safely (var a)
-     ============================== --%>
-<c:set var="a" value="${article}" />
-<c:if test="${empty a}">
-	<c:set var="a" value="${view}" />
-</c:if>
-<c:if test="${empty a}">
-	<c:set var="a" value="${articleVO}" />
-</c:if>
-<c:if test="${empty a}">
-	<c:set var="a" value="${map.article}" />
-</c:if>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
 
-<%-- Extract common fields (null-safe) --%>
-<c:set var="articleNO" value="${a.articleNO}" />
-<c:set var="title" value="${a.title}" />
-<c:set var="writer" value="${a.id}" />
-<c:set var="cat" value="${a.cat}" />
-<c:set var="sub" value="${a.sub}" />
-<c:set var="imageFileName" value="${a.imageFileName}" />
-<c:set var="content" value="${a.content}" />
-<c:set var="tagsStr" value="${param.tags}" />
-<c:set var="writeDate" value="${a.writeDate}" />
+<c:url var="actionAdd" value="/article/comment/add.do" />
+<c:url var="actionReply" value="/article/comment/reply.do" />
 
-<%-- Owner/Admin check (avoid unknown nested props) --%>
-<c:set var="isOwner"
-	value="${not empty sessionScope.member and sessionScope.member.id == writer}" />
-<c:set var="isAdmin"
-	value="${not empty sessionScope.admin and sessionScope.admin}" />
-
+<!-- 외부 CSS 연결 (이미 존재하는 viewArticle.css 사용) -->
 <link rel="stylesheet"
-	href="<c:url value='/resources/css/viewArticle.css'/>?v=1" />
+	href="<c:url value='/resources/css/viewArticle.css'/>" />
 
-<div class="va-progress" id="vaProgress" aria-hidden="true"></div>
+<div class="va-main">
+	<div class="va-progress" id="vaProgress"></div>
 
-<div class="va-main" role="main" data-article-no="${articleNO}">
 	<div class="va-container">
+		<!-- 머리 -->
 		<header class="va-head">
-			<nav class="va-breadcrumb" aria-label="breadcrumb">
-				<a href="<c:url value='/'/>">홈</a> <span class="sep">›</span> <a
-					href="<c:url value='/board/listArticles.do'/>">기사</a>
-				<c:if test="${not empty cat}">
-					<span class="sep">›</span>
-					<a href="<c:url value='/board/listArticles.do?cat=${cat}'/>"> <c:choose>
-							<c:when test="${cat=='politics'}">정치</c:when>
-							<c:when test="${cat=='economy'}">경제</c:when>
-							<c:when test="${cat=='society'}">사회</c:when>
-							<c:when test="${cat=='culture'}">문화</c:when>
-							<c:when test="${cat=='world'}">국제</c:when>
-							<c:when test="${cat=='sports'}">스포츠</c:when>
-							<c:when test="${cat=='tech'}">IT·과학</c:when>
-							<c:otherwise>${cat}</c:otherwise>
-						</c:choose>
-					</a>
-					<c:if test="${not empty sub}">
-						<span class="sep">›</span>
-						<a
-							href="<c:url value='/board/listArticles.do?cat=${cat}&sub=${sub}'/>">${sub}</a>
-					</c:if>
-				</c:if>
-			</nav>
+			<div class="va-breadcrumb">
+				<a href="<c:url value='/'/>">홈</a> <span class="sep">/</span>
+				<!-- section 필드 의존 제거: 안전한 텍스트로 대체 -->
+				<span>게시글</span>
+			</div>
+			<h1 class="va-title">${article.title}</h1>
 
-			<h1 class="va-title">${fn:escapeXml(title)}</h1>
 			<div class="va-meta">
-				<span class="va-author">작성자 ${fn:escapeXml(writer)}</span> <span
-					class="dot" aria-hidden="true">·</span>
-				<time class="va-time">${writeDate}</time>
+				<span>${article.authorName}</span> <span class="dot">·</span> <span><fmt:formatDate
+						value="${article.publishedAt}" pattern="yyyy-MM-dd HH:mm" /></span> <span
+					class="dot">·</span> <span>조회 ${article.views}</span>
 			</div>
 
 			<div class="va-actions">
+				<form method="post"
+					action="<c:url value='/article/bookmark/toggle.do'/>"
+					class="va-inline">
+					<input type="hidden" name="articleId" value="${article.id}" />
+					<button class="va-btn is-outline" type="submit">북마크</button>
+				</form>
+				<a class="va-btn"
+					href="<c:url value='/article/print.do'><c:param name='id' value='${article.id}'/></c:url>">인쇄</a>
 				<a class="va-btn is-ghost"
-					href="<c:url value='/board/listArticles.do'/>">목록</a>
-				<button type="button" class="va-btn is-outline" id="btnCopy">링크
-					복사</button>
-				<c:if test="${isOwner or isAdmin}">
-					<a class="va-btn"
-						href="<c:url value='/board/modArticleForm.do'><c:param name='articleNO' value='${articleNO}'/></c:url>">수정</a>
-					<form id="vaDelForm" class="va-inline" method="post"
-						action="<c:url value='/board/removeArticle.do'/>">
-						<c:if test="${_csrf != null}">
-							<input type="hidden" name="${_csrf.parameterName}"
-								value="${_csrf.token}" />
-						</c:if>
-						<input type="hidden" name="articleNO" value="${articleNO}" />
-						<button type="button" class="va-btn is-danger" id="btnDelete">삭제</button>
-					</form>
-				</c:if>
+					href="<c:url value='/article/share.do'><c:param name='id' value='${article.id}'/></c:url>">공유</a>
 			</div>
 		</header>
 
-		<c:if test="${not empty imageFileName}">
-			<figure class="va-hero">
-				<img src="<c:url value='/board/img/${articleNO}/${imageFileName}'/>"
-					alt="${fn:escapeXml(title)}">
-				<figcaption class="sr-only">${fn:escapeXml(title)}</figcaption>
-			</figure>
+		<!-- 히어로 이미지 -->
+		<c:if test="${not empty article.heroUrl}">
+			<div class="va-hero">
+				<img src="${article.heroUrl}" alt="hero" />
+			</div>
 		</c:if>
 
-		<article class="va-article" id="articleBody">
-			<%-- NOTE: If content is sanitized HTML on server, keep escapeXml=false. --%>
-			<c:out value="${content}" escapeXml="false" />
+		<!-- 본문 -->
+		<article class="va-article">
+			<c:if test="${not empty article.html}">
+        ${article.html}
+      </c:if>
+			<c:if test="${empty article.html}">
+				<c:forEach var="p" items="${article.paragraphs}">
+					<p>${p}</p>
+				</c:forEach>
+			</c:if>
+
+			<c:forEach var="img" items="${article.images}">
+				<figure style="margin: 14px 0">
+					<img src="${img.url}" alt="${img.alt}" />
+					<figcaption class="va-meta" style="margin-top: 6px">${img.caption}</figcaption>
+				</figure>
+			</c:forEach>
 		</article>
 
-		<c:if test="${not empty tagsStr}">
+		<!-- 태그 -->
+		<c:if test="${not empty article.tags}">
 			<div class="va-tags">
-				<c:forEach var="t" items="${fn:split(tagsStr, ',')}">
-					<c:if test="${not empty fn:trim(t)}">
-						<a class="va-chip"
-							href="<c:url value='/board/listArticles.do?q=${fn:trim(t)}'/>">#${fn:trim(t)}</a>
-					</c:if>
+				<c:forEach var="tag" items="${article.tags}">
+					<a class="va-chip"
+						href="<c:url value='/tag.do'><c:param name='q' value='${tag}'/></c:url>">#${tag}</a>
 				</c:forEach>
 			</div>
 		</c:if>
 
-		<nav class="va-bottom">
-			<a class="va-btn is-ghost"
-				href="<c:url value='/board/listArticles.do'/>">← 목록으로</a>
+		<!-- 하단 액션: section 의존 제거, 안전한 목록 링크로 변경 -->
+		<div class="va-bottom">
 			<div class="va-flex"></div>
-			<button type="button" class="va-btn is-outline" id="btnTop">맨
-				위로</button>
-		</nav>
-	</div>
+			<a class="va-btn is-outline" href="<c:url value='/board/list.do'/>">목록</a>
+		</div>
 
-	<div class="va-toast" id="vaToast" aria-live="polite"></div>
+		<!-- 댓글 쓰기 -->
+		<section style="margin: 16px 0 24px">
+			<h2 style="font-size: 1.2rem; margin: 0 0 10px">댓글</h2>
+
+			<form method="post" action="${actionAdd}"
+				enctype="multipart/form-data" class="va-card">
+				<input type="hidden" name="articleId" value="${article.id}" />
+				<div
+					style="border: 1px solid var(- -line); border-radius: 12px; padding: 12px">
+					<label class="sr-only" for="c-content">내용</label>
+					<textarea id="c-content" name="content" rows="4"
+						style="width: 100%; border: 1px solid var(- -line); border-radius: 10px; padding: 10px"
+						placeholder="댓글을 입력하세요"></textarea>
+
+					<!-- 사진 업로드(미리보기) -->
+					<div
+						style="margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+						<label class="va-btn is-outline"
+							style="height: auto; padding: 8px 12px; cursor: pointer">
+							사진 추가 <input type="file" name="photos" accept="image/*" multiple
+							class="sr-only va-upload" data-preview="#c-preview">
+						</label>
+						<div id="c-preview"
+							style="display: flex; gap: 8px; flex-wrap: wrap"></div>
+						<button type="submit" class="va-btn">등록</button>
+					</div>
+
+					<c:if test="${not empty _csrf}">
+						<input type="hidden" name="${_csrf.parameterName}"
+							value="${_csrf.token}" />
+					</c:if>
+				</div>
+			</form>
+		</section>
+
+		<!-- 댓글 리스트 -->
+		<section style="margin: 16px 0 50px">
+			<c:forEach var="cmt" items="${comments}">
+				<div style="border-top: 1px solid var(- -line); padding: 14px 0">
+					<div class="va-meta" style="margin-bottom: 6px">
+						<strong>${cmt.authorName}</strong> <span class="dot">·</span> <span><fmt:formatDate
+								value="${cmt.createdAt}" pattern="yyyy-MM-dd HH:mm" /></span>
+					</div>
+
+					<div style="white-space: pre-wrap">${cmt.content}</div>
+
+					<c:if test="${not empty cmt.attachments}">
+						<div
+							style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px">
+							<c:forEach var="img" items="${cmt.attachments}">
+								<a href="${img.url}" target="_blank"><img src="${img.url}"
+									alt="${img.originalName}"
+									style="width: 120px; height: 120px; object-fit: cover; border: 1px solid var(- -line); border-radius: 8px" /></a>
+							</c:forEach>
+						</div>
+					</c:if>
+
+					<div class="va-actions" style="margin-top: 8px">
+						<a class="va-btn is-ghost" href="javascript:void(0)"
+							onclick="toggleReplyForm('${cmt.id}')">답글</a>
+						<c:if test="${cmt.own}">
+							<a class="va-btn is-ghost"
+								href="<c:url value='/article/comment/delete.do'><c:param name='id' value='${cmt.id}'/></c:url>">삭제</a>
+						</c:if>
+					</div>
+
+					<!-- 답글 폼 -->
+					<div id="reply-${cmt.id}" style="display: none; margin-top: 10px">
+						<form method="post" action="${actionReply}"
+							enctype="multipart/form-data"
+							style="border: 1px solid var(- -line); border-radius: 12px; padding: 10px">
+							<input type="hidden" name="articleId" value="${article.id}" /> <input
+								type="hidden" name="parentId" value="${cmt.id}" />
+							<textarea name="content" rows="3"
+								style="width: 100%; border: 1px solid var(- -line); border-radius: 10px; padding: 10px"
+								placeholder="답글을 입력하세요"></textarea>
+							<div
+								style="margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+								<label class="va-btn is-outline"
+									style="height: auto; padding: 8px 12px; cursor: pointer">
+									사진 추가 <input type="file" name="photos" accept="image/*"
+									multiple class="sr-only va-upload"
+									data-preview="#r-preview-${cmt.id}">
+								</label>
+								<div id="r-preview-${cmt.id}"
+									style="display: flex; gap: 8px; flex-wrap: wrap"></div>
+								<button type="submit" class="va-btn">등록</button>
+							</div>
+							<c:if test="${not empty _csrf}">
+								<input type="hidden" name="${_csrf.parameterName}"
+									value="${_csrf.token}" />
+							</c:if>
+						</form>
+					</div>
+
+					<!-- 대댓글 -->
+					<c:if test="${not empty cmt.replies}">
+						<div
+							style="margin-top: 12px; padding-left: 14px; border-left: 2px solid var(- -line)">
+							<c:forEach var="rp" items="${cmt.replies}">
+								<div
+									style="padding: 10px 0; border-top: 1px dashed var(- -line)">
+									<div class="va-meta" style="margin-bottom: 6px">
+										<strong>${rp.authorName}</strong> <span class="dot">·</span> <span><fmt:formatDate
+												value="${rp.createdAt}" pattern="yyyy-MM-dd HH:mm" /></span>
+									</div>
+									<div style="white-space: pre-wrap">${rp.content}</div>
+									<c:if test="${not empty rp.attachments}">
+										<div
+											style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px">
+											<c:forEach var="img" items="${rp.attachments}">
+												<a href="${img.url}" target="_blank"><img
+													src="${img.url}" alt="${img.originalName}"
+													style="width: 110px; height: 110px; object-fit: cover; border: 1px solid var(- -line); border-radius: 8px" /></a>
+											</c:forEach>
+										</div>
+									</c:if>
+									<div class="va-actions" style="margin-top: 6px">
+										<c:if test="${rp.own}">
+											<a class="va-btn is-ghost"
+												href="<c:url value='/article/comment/delete.do'><c:param name='id' value='${rp.id}'/></c:url>">삭제</a>
+										</c:if>
+									</div>
+								</div>
+							</c:forEach>
+						</div>
+					</c:if>
+				</div>
+			</c:forEach>
+		</section>
+	</div>
 </div>
 
-<script defer src="<c:url value='/resources/js/viewArticle.js'/>?v=1"></script>
-
-
-
-
-<!-- WA2-COMMENTS-START -->
-<section id="wa2-comments" class="wa2-comments"
-	aria-labelledby="wa2-comments-title">
-	<h2 id="wa2-comments-title" class="wa2-comments__title">댓글</h2>
-
-	<c:choose>
-		<c:when test="${not empty commentList}">
-			<ul class="wa2-comments__list">
-				<c:forEach var="c" items="${commentList}">
-					<li class="wa2-comment" data-comment-id="${c.id}">
-						<div class="wa2-comment__avatar">${fn:substring(fn:escapeXml(c.authorName),0,1)}</div>
-						<div class="wa2-comment__main">
-							<div class="wa2-comment__meta">
-								<span class="wa2-comment__author">${fn:escapeXml(c.authorName)}</span>
-								<time class="wa2-comment__time" datetime="${c.regDate}">${c.regDate}</time>
-							</div>
-							<p class="wa2-comment__body">${fn:escapeXml(c.content)}</p>
-						</div>
-					</li>
-				</c:forEach>
-			</ul>
-		</c:when>
-		<c:otherwise>
-			<p class="wa2-comments__empty">아직 댓글이 없습니다. 첫 댓글을 남겨보세요.</p>
-		</c:otherwise>
-	</c:choose>
-
-	<c:if test="${not empty sessionScope.member}">
-		<form id="wa2-comment-form" class="wa2-comment-form"
-			action="<c:url value='/comments/add'/>" method="post" novalidate>
-			<!-- articleNo resolver -->
-			<c:set var="commentArticleNo" value="${param.articleNo}" />
-			<c:if test="${empty commentArticleNo}">
-				<c:set var="commentArticleNo" value="${param.articleNO}" />
-			</c:if>
-			<c:if test="${empty commentArticleNo}">
-				<c:set var="commentArticleNo" value="${requestScope.articleNo}" />
-			</c:if>
-			<c:if test="${empty commentArticleNo}">
-				<c:set var="commentArticleNo" value="${requestScope.articleNO}" />
-			</c:if>
-
-			<input type="hidden" name="articleNo" value="${commentArticleNo}" />
-			<c:if test="${not empty _csrf}">
-				<input type="hidden" name="${_csrf.parameterName}"
-					value="${_csrf.token}" />
-			</c:if>
-
-			<div class="wa2-comment-form__row">
-				<div class="wa2-comment-form__logged">
-					로그인: <strong><c:out value='${sessionScope.member.name}' /></strong>
-				</div>
-			</div>
-
-			<label class="wa2-field wa2-field--textarea"> <span
-				class="wa2-field__label">내용</span> <textarea class="wa2-textarea"
-					name="content" rows="3" maxlength="1000" required
-					placeholder="부적절한 표현, 광고성 글은 예고 없이 숨김/삭제될 수 있습니다."></textarea>
-				<div class="wa2-field__hint">
-					<span id="wa2-char">0</span>/1000
-				</div>
-			</label>
-
-			<div class="wa2-comment-form__actions">
-				<button type="reset" class="wa2-btn wa2-btn--ghost">취소</button>
-				<button type="submit" class="wa2-btn wa2-btn--primary">등록</button>
-			</div>
-		</form>
-	</c:if>
-	<c:if test="${empty sessionScope.member}">
-		<div class="wa2-comment-locked">
-			댓글은 로그인 후에만 작성할 수 있습니다. <a
-				href="<c:url value='/member/loginForm.do'/>"
-				class="wa2-btn wa2-btn--primary">로그인</a>
-		</div>
-	</c:if>
-</section>
-
-<style>
-/* ===== Comments (narrow, centered) ===== */
-.wa2-comments {
-	width: 945px;
-	height: 345px;
-	box-sizing: border-box;
-	overflow-y: auto;
-	overflow-x: hidden;
-	margin: .5rem auto;
-	padding: .6rem;
-	border: 1px solid #e5e7eb;
-	border-radius: .6rem;
-	background: #fff
-}
-
-.wa2-comments__title {
-	margin: 0 0 .5rem 0;
-	font-size: 1rem;
-	line-height: 1.4rem
-}
-
-.wa2-comments__empty {
-	margin: .25rem 0 .5rem 0;
-	color: #6b7280;
-	font-size: .9rem
-}
-
-.wa2-comments__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: .45rem
-}
-
-.wa2-comment {
-	display: flex;
-	gap: .4rem;
-	padding: .4rem;
-	border: 1px solid #f1f5f9;
-	border-radius: .5rem;
-	background: #fafafa
-}
-
-.wa2-comment__avatar {
-	width: 24px;
-	height: 24px;
-	border-radius: 9999px;
-	background: #e5e7eb;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-weight: 700
-}
-
-.wa2-comment__main {
-	flex: 1;
-	min-width: 0
-}
-
-.wa2-comment__meta {
-	display: flex;
-	gap: .5rem;
-	align-items: baseline;
-	flex-wrap: wrap
-}
-
-.wa2-comment__author {
-	font-weight: 600
-}
-
-.wa2-comment__time {
-	color: #6b7280;
-	font-size: .85rem
-}
-
-.wa2-comment__body {
-	margin: .1rem 0 0 0;
-	white-space: pre-wrap;
-	word-break: break-word
-}
-
-.wa2-comment-form {
-	margin-top: .6rem;
-	display: flex;
-	flex-direction: column;
-	gap: .5rem
-}
-
-.wa2-comment-form__logged {
-	padding: .35rem .5rem;
-	background: #f8fafc;
-	border: 1px solid #e5e7eb;
-	border-radius: .4rem
-}
-
-.wa2-field {
-	display: flex;
-	flex-direction: column;
-	gap: .2rem
-}
-
-.wa2-field__label {
-	font-size: .9rem;
-	color: #374151
-}
-
-.wa2-textarea {
-	width: 100%;
-	padding: .45rem .6rem;
-	border: 1px solid #d1d5db;
-	border-radius: .5rem;
-	font: inherit;
-	font-size: .95rem;
-	min-height: 72px;
-	max-height: 200px;
-	resize: vertical
-}
-
-.wa2-textarea:focus {
-	outline: 2px solid transparent;
-	border-color: #9ca3af;
-	box-shadow: 0 0 0 3px rgba(59, 130, 246, .2)
-}
-
-.wa2-field--textarea {
-	position: relative
-}
-
-.wa2-field__hint {
-	position: absolute;
-	bottom: .35rem;
-	right: .5rem;
-	font-size: .75rem;
-	color: #6b7280
-}
-
-.wa2-comment-form__actions {
-	display: flex;
-	gap: .3rem;
-	flex-wrap: wrap;
-	justify-content: flex-end
-}
-
-.wa2-btn {
-	font-size: .9rem;
-	appearance: none;
-	border: 1px solid #111827;
-	background: #111827;
-	color: #fff;
-	border-radius: .45rem;
-	padding: .3rem .55rem;
-	cursor: pointer
-}
-
-.wa2-btn--primary {
-	background: #111827;
-	border-color: #111827
-}
-
-.wa2-btn--ghost {
-	background: #fff;
-	color: #111827;
-	border-color: #d1d5db
-}
-
-.wa2-btn:disabled {
-	opacity: .5;
-	cursor: not-allowed
-}
-
-.wa2-comment-locked {
-	width: 100%;
-	box-sizing: border-box;
-	margin: .5rem 0 0 0;
-	padding: .5rem;
-	border: 1px dashed #d1d5db;
-	border-radius: .5rem;
-	color: #6b7280;
-	text-align: center
-}
-
-@media ( max-width : 720px) {
-	.wa2-comments, .wa2-comment-locked {
-		max-width: 100%;
-		margin-left: 0;
-		margin-right: 0;
-		border-radius: .5rem
-	}
-}
-
-@media ( prefers-color-scheme : dark) {
-	.wa2-comments {
-		background: #0b0f14;
-		border-color: #1f2937
-	}
-	.wa2-comment {
-		background: #0e141b;
-		border-color: #1f2937
-	}
-	.wa2-textarea {
-		background: #0e141b;
-		border-color: #1f2937;
-		color: #e5e7eb
-	}
-	.wa2-btn--ghost {
-		background: #0e141b;
-		color: #e5e7eb;
-		border-color: #1f2937
-	}
-	.wa2-comment-form__logged {
-		background: #0e141b;
-		border-color: #1f2937
-	}
-	.wa2-comments__empty, .wa2-comment__time, .wa2-field__label {
-		color: #9ca3af
-	}
-}
-
-@media ( max-width : 980px) {
-	.wa2-comments, .wa2-comment-locked {
-		width: 100%;
-	}
-}
-}
-</style>
-
 <script>
-	(function() {
-		var form = document.getElementById('wa2-comment-form');
-		var ta = form ? form.querySelector('textarea[name="content"]') : null;
-		var counter = document.getElementById('wa2-char');
+/* 스크롤 진행바 */
+(function(){
+  var el=document.getElementById('vaProgress');
+  function onScroll(){
+    var h=document.documentElement, b=document.body;
+    var st=(h.scrollTop||b.scrollTop), sh=(h.scrollHeight||b.scrollHeight)-h.clientHeight;
+    var p=sh>0? (st/sh*100):0;
+    el.style.width=p+'%';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
 
-		function updateCount() {
-			if (counter && ta)
-				counter.textContent = (ta.value || '').length;
-		}
+/* 답글 폼 토글 */
+function toggleReplyForm(id){
+  var el=document.getElementById('reply-'+id);
+  if(!el) return;
+  el.style.display = (el.style.display==='none'||el.style.display==='') ? 'block' : 'none';
+}
 
-		if (ta) {
-			updateCount();
-			ta.addEventListener('input', function() {
-				this.style.height = 'auto';
-				this.style.height = Math.min(this.scrollHeight, 200) + 'px';
-				updateCount();
-			});
-		}
-
-		if (form) {
-			form.addEventListener('submit', function(e) {
-				var content = ta ? ta.value.trim() : '';
-				if (!content) {
-					e.preventDefault();
-					alert('내용을 입력해주세요.');
-				}
-			});
-		}
-	})();
+/* 이미지 미리보기 */
+(function(){
+  function previewFiles(input, previewSel){
+    var box=document.querySelector(previewSel);
+    if(!box) return;
+    box.innerHTML='';
+    var files=input.files||[];
+    for(var i=0;i<files.length;i++){
+      if(!files[i].type.match(/^image\\//)) continue;
+      var r=new FileReader();
+      r.onload=function(e){
+        var img=new Image();
+        img.src=e.target.result;
+        img.style.width='96px'; img.style.height='96px';
+        img.style.objectFit='cover';
+        img.style.border='1px solid var(--line)';
+        img.style.borderRadius='8px';
+        box.appendChild(img);
+      };
+      r.readAsDataURL(files[i]);
+    }
+  }
+  document.addEventListener('change', function(e){
+    var t=e.target;
+    if(t.classList && t.classList.contains('va-upload')){
+      var sel=t.getAttribute('data-preview')||'';
+      previewFiles(t, sel);
+    }
+  });
+})();
 </script>
-<!-- WA2-COMMENTS-END -->

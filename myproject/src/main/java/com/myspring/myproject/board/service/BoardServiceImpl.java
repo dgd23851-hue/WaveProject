@@ -22,7 +22,11 @@ public class BoardServiceImpl implements BoardService {
         if (params == null) params = new HashMap<String, Object>();
         return boardDAO.selectAllArticles(params);
     }
-
+    
+    @Override
+    public List<CommentDTO> listCommentsWithReplies(int articleNO) {
+        return commentMapper.selectCommentsWithReplies(articleNO);
+    }
 
     @Override
     public int addNewArticle(Map<String, Object> articleMap) throws Exception {

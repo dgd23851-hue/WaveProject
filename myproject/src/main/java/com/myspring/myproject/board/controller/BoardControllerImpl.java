@@ -3,7 +3,6 @@ package com.myspring.myproject.board.controller;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.OutputStream;
-import java.net.URLEncoder;
 import java.security.Principal;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -15,9 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import com.myspring.myproject.board.service.BoardService;
-import com.myspring.myproject.board.vo.ArticleVO;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
@@ -27,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
+
+import com.myspring.myproject.board.service.BoardService;
+import com.myspring.myproject.board.vo.ArticleVO;
 
 @Controller
 @RequestMapping("/board")
@@ -247,24 +246,136 @@ public class BoardControllerImpl {
 	 */
 	@RequestMapping(value = "/viewArticle.do", method = RequestMethod.GET)
 	public ModelAndView viewArticle(HttpServletRequest request) throws Exception {
-		String sNo = request.getParameter("articleNO");
-		if (isBlank(sNo))
-			return new ModelAndView("redirect:/board/listArticles.do");
-		int articleNO = Integer.parseInt(sNo);
+	    String sNo = request.getParameter("articleNO");
+	    if (isBlank(sNo)) return new ModelAndView("redirect:/board/listArticles.do");
+	    int articleNO = Integer.parseInt(sNo);
 
-		Object data = boardService.viewArticle(articleNO);
+	    Object data = boardService.viewArticle(articleNO);
 
-		ModelAndView mav = new ModelAndView("board/viewArticle");
-		if (data instanceof ArticleVO) {
-			mav.addObject("article", data);
-		} else if (data instanceof Map) {
-			@SuppressWarnings("unchecked")
-			Map<String, Object> m = (Map<String, Object>) data;
-			mav.addAllObjects(m);
-		} else {
-			mav.addObject("articleNO", articleNO);
-		}
-		return mav;
+	    ModelAndView mav = new ModelAndView("board/viewArticle");
+
+	    // 1) ArticleVO -> 뷰 모델(Map)로 변환
+	    if (data instanceof ArticleVO) {
+	        Map<String, Object> articleVM = toArticleViewModel((ArticleVO) data);
+	        mav.addObject("article", articleVM);
+
+	    // 2) Map이 온 경우도 'article' 키를 보장
+	    } else if (data instanceof Map) {
+	        @SuppressWarnings("unchecked")
+	        Map<String, Object> fromSvc = (Map<String, Object>) data;
+	        mav.addAllObjects(fromSvc);
+
+	        Object a = firstNonNull(
+	            fromSvc.get("article"),
+	            fromSvc.get("articleVO"),
+	            fromSvc.get("vo"),
+	            fromSvc.get("data")
+	        );
+
+	        if (a instanceof ArticleVO) {
+	            mav.addObject("article", toArticleViewModel((ArticleVO) a));
+	        } else if (a instanceof Map) {
+	            // 이미 article이 Map이면 그대로 쓰되, 필수 키가 없으면 기본값 채움
+	            @SuppressWarnings("unchecked")
+	            Map<String, Object> articleMap = (Map<String, Object>) a;
+	            ensureKeys(articleMap);
+	            mav.addObject("article", articleMap);
+	        } else if (!mav.getModel().containsKey("article")) {
+	            // 최소 안전 기본값
+	            mav.addObject("article", minimumArticleVM(articleNO));
+	        }
+
+	    // 3) 알 수 없는 타입 → 최소 안전 기본값
+	    } else {
+	        mav.addObject("article", minimumArticleVM(articleNO));
+	    }
+
+	    // 댓글 리스트 주입(서비스명은 프로젝트에 맞게 바꿔줘)
+	    try {
+	        List<?> comments = boardService.listCommentsWithReplies(articleNO);
+	        mav.addObject("comments", comments != null ? comments : java.util.Collections.emptyList());
+	    } catch (Throwable ignore) {
+	        mav.addObject("comments", java.util.Collections.emptyList());
+	    }
+
+	    return mav;
+	}
+	
+	/* ----------  헬퍼들 ---------- */
+	private Map<String, Object> toArticleViewModel(ArticleVO a) {
+	    Map<String, Object> m = new java.util.LinkedHashMap<>();
+	    // id / 번호
+	    m.put("id",  getByAny(a, new String[]{"getArticleNO","getId","getNo"}, Integer.class, 0));
+	    // 제목
+	    m.put("title", nvl(getByAny(a, new String[]{"getTitle"}, String.class, null), "제목 없음"));
+	    // 작성자 표시명(authorName): writer, id, author 순으로 시도
+	    m.put("authorName", nvl(getByAny(a, new String[]{"getWriter","getId","getAuthor","getAuthorName"}, String.class, null), "익명"));
+	    // 작성일(publishedAt): writeDate, createdAt, regDate 순
+	    java.util.Date published = getByAny(a, new String[]{"getWriteDate","getCreatedAt","getRegDate"}, java.util.Date.class, null);
+	    m.put("publishedAt", published);
+	    // 조회수(views): viewCnt, views, hit, readCount 순
+	    Integer views = getByAny(a, new String[]{"getViewCnt","getViews","getHit","getReadCount"}, Integer.class, null);
+	    m.put("views", views != null ? views : 0);
+	    // 대표 이미지 -> heroUrl
+	    String imageName = getByAny(a, new String[]{"getImageFileName","getThumbnail","getHero"}, String.class, null);
+	    m.put("heroUrl", imageName == null || imageName.isEmpty() ? null : ("/files/article/" + imageName));
+	    // 본문 -> html 로 내려서 JSP에서 바로 출력 (XSS 필터링은 서비스단에서)
+	    String content = getByAny(a, new String[]{"getContent","getHtml","getBody"}, String.class, null);
+	    m.put("html", content);
+	    // 옵션 필드들(없어도 JSP는 문제 없음)
+	    m.put("images", java.util.Collections.emptyList());
+	    m.put("tags",   java.util.Collections.emptyList());
+	    return m;
+	}
+
+	private Map<String,Object> minimumArticleVM(int articleNO){
+	    Map<String,Object> m = new java.util.LinkedHashMap<>();
+	    m.put("id", articleNO);
+	    m.put("title", "게시글");
+	    m.put("authorName", "익명");
+	    m.put("publishedAt", null);
+	    m.put("views", 0);
+	    m.put("heroUrl", null);
+	    m.put("html", "");
+	    m.put("images", java.util.Collections.emptyList());
+	    m.put("tags",   java.util.Collections.emptyList());
+	    return m;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> T getByAny(Object bean, String[] getters, Class<T> type, T defVal) {
+	    for (String g : getters) {
+	        try {
+	            java.lang.reflect.Method m = bean.getClass().getMethod(g);
+	            Object v = m.invoke(bean);
+	            if (v != null && type.isAssignableFrom(v.getClass())) return (T) v;
+	            if (v != null && type == String.class) return (T) v.toString();
+	        } catch (NoSuchMethodException ignore) {
+	        } catch (Exception e) {
+	            // 로깅 원하면 추가
+	        }
+	    }
+	    return defVal;
+	}
+
+	private static String nvl(String s, String def){ return (s == null || s.trim().isEmpty()) ? def : s; }
+
+	private static Object firstNonNull(Object... arr){
+	    for(Object o: arr) if(o != null) return o;
+	    return null;
+	}
+
+	/** Map으로 기사 내려온 경우, JSP 필수 키 최소 보장 */
+	private static void ensureKeys(Map<String,Object> m){
+	    m.putIfAbsent("id", 0);
+	    m.putIfAbsent("title", "게시글");
+	    m.putIfAbsent("authorName", "익명");
+	    m.putIfAbsent("publishedAt", null);
+	    m.putIfAbsent("views", 0);
+	    m.putIfAbsent("heroUrl", null);
+	    m.putIfAbsent("html", "");
+	    m.putIfAbsent("images", java.util.Collections.emptyList());
+	    m.putIfAbsent("tags",   java.util.Collections.emptyList());
 	}
 
 	/*

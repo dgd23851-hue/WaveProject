@@ -3,19 +3,23 @@
         "http://tiles.apache.org/dtds/tiles-config_2_0.dtd">
 <tiles-definitions>
 
-    <!-- 동일한 부모 레이아웃 -->
-    <definition name="layout" template="/WEB-INF/views/common/layout.jsp">
-        <put-attribute name="title"  value=""/>
-        <put-attribute name="header" value="/WEB-INF/views/common/header.jsp"/>
-        <put-attribute name="footer" value="/WEB-INF/views/common/footer.jsp"/>
-        <put-attribute name="body"   value=""/>
-    </definition>
+	<!-- 동일한 부모 레이아웃 -->
+	<definition name="layout"
+		template="/WEB-INF/views/common/layout.jsp">
+		<put-attribute name="title" value="" />
+		<put-attribute name="header"
+			value="/WEB-INF/views/common/header.jsp" />
+		<put-attribute name="footer"
+			value="/WEB-INF/views/common/footer.jsp" />
+		<put-attribute name="body" value="" />
+	</definition>
 
-    <!-- 멤버 화면 -->
-    <definition name="member/*" extends="layout">
-        <put-attribute name="body" value="/WEB-INF/views/member/{1}.jsp"/>
-    </definition>
-    
+	<!-- 멤버 화면 -->
+	<definition name="member/*" extends="layout">
+		<put-attribute name="body"
+			value="/WEB-INF/views/member/{1}.jsp" />
+	</definition>
+
 	<!-- 메인 페이지 -->
 
 	<definition name="baseLayout"
@@ -29,7 +33,7 @@
 		<put-attribute name="footer"
 			value="/WEB-INF/views/common/footer.jsp" />
 	</definition>
-
+  
 	<!-- 인트로 페이지를 위한 레이아웃 -->
 	<definition name="homeLayout"
 		template="/WEB-INF/views/common/layout2.jsp">
@@ -46,7 +50,7 @@
 	</definition>
 
 	<definition name="main" extends="baseLayout">
-	
+
 		<put-attribute name="title" value="메인페이지" />
 		<put-attribute name="body"
 			value="/WEB-INF/views/main.jsp" />
