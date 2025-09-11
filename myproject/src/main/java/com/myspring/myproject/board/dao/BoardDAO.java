@@ -5,9 +5,8 @@ import java.util.Map;
 
 import com.myspring.myproject.board.vo.ArticleVO;
 
-
 public interface BoardDAO {
-    List<ArticleVO> selectAllArticles(Map<String, Object> params) throws Exception;
+    List<ArticleVO> selectAllArticles(Map<String, Object> params);
     int insertNewArticle(Map<String, Object> articleMap);
     ArticleVO selectArticle(int articleNO);
     void updateArticle(Map<String, Object> articleMap);

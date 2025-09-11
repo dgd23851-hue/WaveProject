@@ -1,60 +1,51 @@
 package com.myspring.myproject.board.controller;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import com.myspring.myproject.board.dto.CommentDTO;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.myspring.myproject.board.service.CommentService;
+import com.myspring.myproject.board.dto.CommentDTO;
 
 @Controller
-@RequestMapping("/board")
+@RequestMapping("/board") // <- /board 고정
 public class CommentController {
 
-    @Autowired
-    private CommentService commentService;
+	@Autowired
+	private CommentService commentService;
 
-    // /board/addComment.do 와 /board/comment/reply.do 를 둘 다 POST로 처리
-    @RequestMapping(value = {"/addComment.do", "/comment/reply.do"}, method = RequestMethod.POST)
-    public String addComment(
-            // 둘 중 오는 걸로 받음 (JSP가 articleNo를 쓰든 articleNO를 쓰든 OK)
-            @RequestParam(value = "articleNo", required = false) Integer articleNo1,
-            @RequestParam(value = "articleNO", required = false) Integer articleNo2,
-            @RequestParam(value = "parentId",  required = false) Long parentId,
-            @RequestParam("content") String content,
-            HttpSession session,
-            HttpServletRequest request,
-            RedirectAttributes ra) {
+	// 헬스체크: 이게 404면 컨트롤러 스캔/매핑 자체가 안 된 것
+	@RequestMapping(value = "/comment/ping.do", method = RequestMethod.GET)
+	@ResponseBody
+	public String ping() {
+		return "OK";
+	}
 
-        // 글 번호 확정
-        Integer articleNo = (articleNo1 != null) ? articleNo1 : articleNo2;
-        if (articleNo == null || articleNo <= 0) {
-            ra.addFlashAttribute("msg", "잘못된 요청입니다.");
-            return "redirect:/board/listArticles.do";
-        }
+	@RequestMapping(value = "/comment/add.do", method = RequestMethod.POST)
+	public String addComment(@RequestParam("articleNO") Integer articleNo, @RequestParam("content") String content,
+			@RequestParam(value = "writer", required = false) String writer,
+			@RequestParam(value = "parentId", required = false) Long parentId) {
 
-        // 작성자 ID (세션 키는 프로젝트에 맞춰 수정)
-        String writerId = (String) session.getAttribute("memberId");
-        if (writerId == null) writerId = "anonymous";
+		CommentDTO dto = new CommentDTO();
+		dto.setArticleNo(articleNo); // CommentDTO: setArticleNo(Integer) 사용
+		dto.setParentId(parentId);
+		dto.setWriter((writer == null || writer.trim().isEmpty()) ? "익명" : writer.trim());
+		dto.setContent(content);
 
-        // DTO 구성
-        CommentDTO dto = new CommentDTO();
-        dto.setArticleNo(articleNo);     // ★ FK 컬럼에 맞춘 이름
-        dto.setParentId(parentId);       // null이면 일반 댓글, 있으면 답글
-        dto.setWriter(writerId);
-        dto.setContent(content);
+		commentService.addComment(dto);
+		return "redirect:/board/viewArticle.do?articleNO=" + articleNo;
+	}
 
-        // 저장
-        commentService.addComment(dto);
+	@RequestMapping(value = "/comment/reply.do", method = RequestMethod.POST)
+	public String replyComment(@RequestParam("articleNO") Integer articleNo, @RequestParam("parentId") Long parentId,
+			@RequestParam("content") String content, @RequestParam(value = "writer", required = false) String writer) {
 
-        // 상세로 리다이렉트 (네 컨트롤러가 articleNO로 받는다면 그대로 맞춰 보냄)
-        ra.addAttribute("articleNO", articleNo);
-        return "redirect:/board/viewArticle.do";
-    }
+		CommentDTO dto = new CommentDTO();
+		dto.setArticleNo(articleNo);
+		dto.setParentId(parentId);
+		dto.setWriter((writer == null || writer.trim().isEmpty()) ? "익명" : writer.trim());
+		dto.setContent(content);
+
+		commentService.addComment(dto);
+		return "redirect:/board/viewArticle.do?articleNO=" + articleNo;
+	}
 }

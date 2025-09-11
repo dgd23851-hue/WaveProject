@@ -1,23 +1,15 @@
 package com.myspring.myproject.board.dto;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 public class CommentDTO {
-
-	private Long id;
-	private Integer articleNo; // 컨트롤러의 setArticleNo와 맞춤 (또는 articleNO로 모두 통일)
+	private Integer articleNo; // ★
 	private Long parentId;
 	private String writer;
 	private String content;
-	private LocalDateTime createdAt;
-	private List<CommentDTO> replies = new ArrayList<>();
+	private java.util.Date createdAt;
+	private java.util.Date updatedAt;
+	private Long id;
+	private String authorName;
 
-	public CommentDTO() {
-	} // ★ 기본 생성자
-
-	// --- Getter/Setter ---
 	public Long getId() {
 		return id;
 	}
@@ -30,8 +22,8 @@ public class CommentDTO {
 		return articleNo;
 	}
 
-	public void setArticleNo(Integer articleNo) {
-		this.articleNo = articleNo;
+	public void setArticleNo(long articleNo) {
+		this.articleNo = (int) articleNo;
 	}
 
 	public Long getParentId() {
@@ -50,6 +42,15 @@ public class CommentDTO {
 		this.writer = writer;
 	}
 
+	// 안전한 게터/세터 추가
+	public String getAuthorName() {
+		return (authorName != null) ? authorName : writer;
+	}
+
+	public void setAuthorName(String authorName) {
+		this.authorName = authorName;
+	}
+
 	public String getContent() {
 		return content;
 	}
@@ -58,19 +59,34 @@ public class CommentDTO {
 		this.content = content;
 	}
 
-	public LocalDateTime getCreatedAt() {
+	public java.util.Date getCreatedAt() {
 		return createdAt;
 	}
 
-	public void setCreatedAt(LocalDateTime createdAt) {
+	public void setCreatedAt(java.util.Date createdAt) {
 		this.createdAt = createdAt;
 	}
 
-	public List<CommentDTO> getReplies() {
+	public java.util.Date getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(java.util.Date updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+	// import java.util.List; import java.util.ArrayList; 필요
+
+	private java.util.List<CommentDTO> replies;
+
+	public java.util.List<CommentDTO> getReplies() {
+		if (replies == null) {
+			replies = new java.util.ArrayList<>();
+		}
 		return replies;
 	}
 
-	public void setReplies(List<CommentDTO> replies) {
+	public void setReplies(java.util.List<CommentDTO> replies) {
 		this.replies = replies;
 	}
+
 }

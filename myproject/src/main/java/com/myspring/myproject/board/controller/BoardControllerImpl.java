@@ -20,11 +20,13 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.myspring.myproject.board.service.BoardService;
+import com.myspring.myproject.board.service.CommentService;
 import com.myspring.myproject.board.vo.ArticleVO;
 
 @Controller
@@ -35,6 +37,8 @@ public class BoardControllerImpl {
 	private BoardService boardService;
 	@Autowired
 	private ServletContext servletContext;
+	@Autowired
+	private CommentService commentService;
 
 	/* ---------- JDK 8 유틸 ---------- */
 	private static boolean isBlank(String s) {
@@ -244,59 +248,27 @@ public class BoardControllerImpl {
 	/*
 	 * ============================== 글 보기 ==============================
 	 */
-	@RequestMapping(value = "/viewArticle.do", method = RequestMethod.GET)
+	@RequestMapping(value="/viewArticle.do", method=RequestMethod.GET)
 	public ModelAndView viewArticle(HttpServletRequest request) throws Exception {
 	    String sNo = request.getParameter("articleNO");
-	    if (isBlank(sNo)) return new ModelAndView("redirect:/board/listArticles.do");
+	    if (sNo == null || sNo.trim().isEmpty()) {
+	        return new ModelAndView("redirect:/board/listArticles.do");
+	    }
 	    int articleNO = Integer.parseInt(sNo);
 
 	    Object data = boardService.viewArticle(articleNO);
 
 	    ModelAndView mav = new ModelAndView("board/viewArticle");
-
-	    // 1) ArticleVO -> 뷰 모델(Map)로 변환
 	    if (data instanceof ArticleVO) {
-	        Map<String, Object> articleVM = toArticleViewModel((ArticleVO) data);
-	        mav.addObject("article", articleVM);
-
-	    // 2) Map이 온 경우도 'article' 키를 보장
+	        mav.addObject("article", data);
 	    } else if (data instanceof Map) {
-	        @SuppressWarnings("unchecked")
-	        Map<String, Object> fromSvc = (Map<String, Object>) data;
-	        mav.addAllObjects(fromSvc);
-
-	        Object a = firstNonNull(
-	            fromSvc.get("article"),
-	            fromSvc.get("articleVO"),
-	            fromSvc.get("vo"),
-	            fromSvc.get("data")
-	        );
-
-	        if (a instanceof ArticleVO) {
-	            mav.addObject("article", toArticleViewModel((ArticleVO) a));
-	        } else if (a instanceof Map) {
-	            // 이미 article이 Map이면 그대로 쓰되, 필수 키가 없으면 기본값 채움
-	            @SuppressWarnings("unchecked")
-	            Map<String, Object> articleMap = (Map<String, Object>) a;
-	            ensureKeys(articleMap);
-	            mav.addObject("article", articleMap);
-	        } else if (!mav.getModel().containsKey("article")) {
-	            // 최소 안전 기본값
-	            mav.addObject("article", minimumArticleVM(articleNO));
-	        }
-
-	    // 3) 알 수 없는 타입 → 최소 안전 기본값
+	        mav.addAllObjects((Map<String,Object>) data);
 	    } else {
-	        mav.addObject("article", minimumArticleVM(articleNO));
+	        mav.addObject("articleNO", articleNO);
 	    }
 
-	    // 댓글 리스트 주입(서비스명은 프로젝트에 맞게 바꿔줘)
-	    try {
-	        List<?> comments = boardService.listCommentsWithReplies(articleNO);
-	        mav.addObject("comments", comments != null ? comments : java.util.Collections.emptyList());
-	    } catch (Throwable ignore) {
-	        mav.addObject("comments", java.util.Collections.emptyList());
-	    }
+	    // ★ 댓글을 JSP가 쓰는 키 `comments` 로 넣기
+	    mav.addObject("comments", boardService.listCommentsWithReplies(articleNO));
 
 	    return mav;
 	}
@@ -537,5 +509,54 @@ public class BoardControllerImpl {
 			return;
 		}
 		serveImage(Integer.parseInt(sNo), fileName, response);
+	}
+	
+	/** 댓글 등록 */
+	@RequestMapping(value = "/addComment.do", method = RequestMethod.POST)
+	public String addComment(@RequestParam("articleNO") int articleNO,
+	                         @RequestParam("content") String content,
+	                         @RequestParam(value = "parentId", required = false) Long parentId,
+	                         @RequestParam(value = "photos",   required = false) java.util.List<MultipartFile> photos,
+	                         javax.servlet.http.HttpSession session) {
+	    // 로그인 사용자 아이디/닉네임 꺼내는 부분은 프로젝트에 맞춰 조정
+	    String writer = null;
+	    Object m = session.getAttribute("member");
+	    if (m != null) {
+	        try {
+	            // 예: MemberVO에 getId() 또는 getName() 등이 있다면 거기 맞춰 사용
+	            writer = (String)m.getClass().getMethod("getId").invoke(m);
+	        } catch (Exception ignore) {}
+	    }
+
+	    com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
+	    dto.setArticleNo(articleNO); // ★ 필드명 주의: setArticleNo
+	    dto.setContent(content);
+	    dto.setParentId(parentId);
+	    dto.setWriter(writer);
+
+	    commentService.addComment(dto); // 파일 저장/첨부는 나중에 확장
+
+	    return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
+	}
+
+	/** (선택) 대댓글도 같은 메서드를 써도 되지만 따로 두고 싶다면 */
+	@RequestMapping(value = "/replyComment.do", method = RequestMethod.POST)
+	public String replyComment(@RequestParam("articleNO") int articleNO,
+	                           @RequestParam("content") String content,
+	                           @RequestParam("parentId") Long parentId) {
+	    com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
+	    dto.setArticleNo(articleNO);
+	    dto.setContent(content);
+	    dto.setParentId(parentId);
+	    commentService.addComment(dto);
+	    return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
+	}
+
+	/** (선택) 댓글 삭제 */
+	@RequestMapping(value = "/deleteComment.do", method = RequestMethod.POST)
+	public String deleteComment(@RequestParam("id") Long id,
+	                            @RequestParam("articleNO") int articleNO) {
+	    commentService.deleteComment(id); // 구현돼있어야 함
+	    return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
 	}
 }

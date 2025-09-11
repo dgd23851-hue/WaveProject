@@ -1,10 +1,11 @@
 package com.myspring.myproject.board.mapper;
 
-import com.myspring.myproject.board.dto.CommentDTO;
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
+import com.myspring.myproject.board.dto.CommentDTO;
 
 public interface CommentMapper {
-	List<CommentDTO> selectCommentsWithReplies(int articleNO);
-
 	int insertComment(CommentDTO dto);
+
+	List<CommentDTO> selectCommentsByArticle(@Param("articleNo") int articleNo);
 }

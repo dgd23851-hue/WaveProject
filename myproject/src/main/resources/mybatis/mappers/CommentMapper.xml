@@ -1,29 +1,53 @@
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <mapper
 	namespace="com.myspring.myproject.board.mapper.CommentMapper">
 
-	<select id="selectCommentsWithReplies" parameterType="int"
+	<!-- 컬럼 ↔ DTO 매핑 -->
+	<resultMap id="CommentMap"
+		type="com.myspring.myproject.board.dto.CommentDTO">
+		<id property="id" column="id" />
+		<result property="articleNo" column="article_no" />
+		<result property="parentId" column="parent_id" />
+		<result property="writer" column="writer" />
+		<result property="content" column="content" />
+		<result property="createdAt" column="created_at" />
+		<result property="updatedAt" column="updated_at" />
+	</resultMap>
+
+	<!-- 글의 전체 댓글 조회 (필요시) -->
+	<select id="selectCommentsByArticle" parameterType="int"
 		resultType="com.myspring.myproject.board.dto.CommentDTO">
 		SELECT
-		c.id AS id,
-		c.article_no AS articleNo,
-		c.parent_id AS parentId,
-		c.writer AS authorName,
-		c.content AS content,
-		c.created_at AS createdAt
-		FROM comments c
-		WHERE c.article_no = #{value}   <!-- 단일 파라미터일 때 안전하게 #{value} -->
-		ORDER BY c.created_at ASC
+		id,
+		article_no AS articleNo,
+		parent_id AS parentId,
+		writer,
+		content,
+		created_at AS createdAt
+		FROM comment
+		WHERE article_no = #{articleNo}
+		ORDER BY COALESCE(parent_id, id), id
 	</select>
 
-		<insert id="insertComment"
-			parameterType="com.myspring.myproject.board.dto.CommentDTO">
-			INSERT INTO comment
-			(article_no, parent_id, writer, content, created_at)
-			VALUES
-			(#{articleNo}, #{parentId,jdbcType=BIGINT}, #{writer}, #{content},
-			CURRENT_TIMESTAMP)
-		</insert>
+	<!-- 댓글 INSERT -->
+	<insert id="insertComment"
+		parameterType="com.myspring.myproject.board.dto.CommentDTO"
+		useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+		INSERT INTO
+		`comment`
+		(article_no, parent_id, writer, content, created_at,
+		updated_at)
+		VALUES
+		(#{articleNo},
+		#{parentId,jdbcType=BIGINT},
+		#{writer},
+		#{content},
+		NOW(), NOW())
+	</insert>
+
 
 </mapper>
