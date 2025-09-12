@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
@@ -7,47 +7,78 @@
 	namespace="com.myspring.myproject.board.mapper.CommentMapper">
 
 	<!-- 컬럼 ↔ DTO 매핑 -->
-	<resultMap id="CommentMap"
+	<resultMap id="commentMap"
 		type="com.myspring.myproject.board.dto.CommentDTO">
-		<id property="id" column="id" />
-		<result property="articleNo" column="article_no" />
-		<result property="parentId" column="parent_id" />
-		<result property="writer" column="writer" />
-		<result property="content" column="content" />
-		<result property="createdAt" column="created_at" />
-		<result property="updatedAt" column="updated_at" />
+		<id column="id" property="id" />
+		<result column="article_no" property="articleNo" />
+		<result column="parent_id" property="parentId" />
+		<result column="writer" property="writer" />
+		<result column="member_id" property="memberId" />
+		<result column="content" property="content" />
+		<result column="created_at" property="createdAt" />
+		<result column="updated_at" property="updatedAt" />
 	</resultMap>
 
-	<!-- 글의 전체 댓글 조회 (필요시) -->
-	<select id="selectCommentsByArticle" parameterType="int"
-		resultType="com.myspring.myproject.board.dto.CommentDTO">
-		SELECT
-		id,
-		article_no AS articleNo,
-		parent_id AS parentId,
-		writer,
-		content,
-		created_at AS createdAt
-		FROM comment
-		WHERE article_no = #{articleNo}
-		ORDER BY COALESCE(parent_id, id), id
-	</select>
-
-	<!-- 댓글 INSERT -->
+	<!-- 댓글 등록 -->
 	<insert id="insertComment"
 		parameterType="com.myspring.myproject.board.dto.CommentDTO"
-		useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-		INSERT INTO
-		`comment`
-		(article_no, parent_id, writer, content, created_at,
-		updated_at)
-		VALUES
-		(#{articleNo},
-		#{parentId,jdbcType=BIGINT},
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO comment (
+		article_no, parent_id, writer, member_id, content, created_at, updated_at
+		) VALUES (
+		#{articleNo},
+		#{parentId, jdbcType=INTEGER},  <!-- 루트댓글이면 null -->
 		#{writer},
+		#{memberId},
 		#{content},
-		NOW(), NOW())
+		NOW(), NOW()
+		)
 	</insert>
 
+	<!-- ★ 글번호로 전체 댓글 조회: 호출명과 동일하게 수정 -->
+	<select id="selectCommentsByArticle" parameterType="int"
+		resultMap="commentMap">
+		SELECT id, article_no, parent_id, writer, member_id, content, created_at,
+		updated_at
+		FROM comment
+		WHERE article_no = #{articleNO}
+		ORDER BY created_at ASC, id ASC
+	</select>
+
+	<!-- (선택) 이전 호환용 별칭: 코드가 selectByArticle을 부르면 이것도 동작 -->
+	<select id="selectByArticle" parameterType="int"
+		resultMap="commentMap">
+		SELECT id, article_no, parent_id, writer, member_id, content, created_at,
+		updated_at
+		FROM comment
+		WHERE article_no = #{articleNO}
+		ORDER BY created_at ASC, id ASC
+	</select>
+
+	<select id="selectReplies" parameterType="int"
+		resultMap="commentMap">
+		SELECT id, article_no, parent_id, writer, member_id, content, created_at,
+		updated_at
+		FROM comment
+		WHERE parent_id = #{parentId}
+		ORDER BY created_at ASC, id ASC
+	</select>
+
+	<select id="countReplies" parameterType="int" resultType="int">
+		SELECT COUNT(*) FROM comment WHERE parent_id = #{parentId}
+	</select>
+
+	<update id="updateComment"
+		parameterType="com.myspring.myproject.board.dto.CommentDTO">
+		UPDATE comment
+		SET content = #{content},
+		updated_at = NOW()
+		WHERE id = #{id}
+		AND member_id = #{memberId}
+	</update>
+
+	<delete id="deleteComment" parameterType="int">
+		DELETE FROM comment WHERE id = #{id}
+	</delete>
 
 </mapper>

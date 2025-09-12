@@ -9,6 +9,15 @@ public class CommentDTO {
 	private java.util.Date updatedAt;
 	private Long id;
 	private String authorName;
+	private String memberId;
+
+	public String getMemberId() {
+		return memberId;
+	}
+
+	public void setMemberId(String memberId) {
+		this.memberId = memberId;
+	}
 
 	public Long getId() {
 		return id;

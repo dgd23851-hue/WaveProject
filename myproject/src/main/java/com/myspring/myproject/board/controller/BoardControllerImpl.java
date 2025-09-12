@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.myspring.myproject.board.mapper.BoardMapper;
 import com.myspring.myproject.board.service.BoardService;
 import com.myspring.myproject.board.service.CommentService;
 import com.myspring.myproject.board.vo.ArticleVO;
@@ -32,7 +33,8 @@ import com.myspring.myproject.board.vo.ArticleVO;
 @Controller
 @RequestMapping("/board")
 public class BoardControllerImpl {
-
+	@Autowired
+	private BoardMapper boardMapper;
 	@Autowired
 	private BoardService boardService;
 	@Autowired
@@ -248,106 +250,131 @@ public class BoardControllerImpl {
 	/*
 	 * ============================== 글 보기 ==============================
 	 */
-	@RequestMapping(value="/viewArticle.do", method=RequestMethod.GET)
-	public ModelAndView viewArticle(HttpServletRequest request) throws Exception {
-	    String sNo = request.getParameter("articleNO");
-	    if (sNo == null || sNo.trim().isEmpty()) {
-	        return new ModelAndView("redirect:/board/listArticles.do");
-	    }
-	    int articleNO = Integer.parseInt(sNo);
+	@RequestMapping(value = "/viewArticle.do", method = RequestMethod.GET)
+	public ModelAndView viewArticle(@RequestParam(value = "articleNO", required = false) Integer articleNO) {
 
-	    Object data = boardService.viewArticle(articleNO);
+		if (articleNO == null) {
+			return new ModelAndView("redirect:/board/listArticles.do");
+		}
 
-	    ModelAndView mav = new ModelAndView("board/viewArticle");
-	    if (data instanceof ArticleVO) {
-	        mav.addObject("article", data);
-	    } else if (data instanceof Map) {
-	        mav.addAllObjects((Map<String,Object>) data);
-	    } else {
-	        mav.addObject("articleNO", articleNO);
-	    }
+		// 서비스만 사용(매퍼 직접 호출 금지)
+		Object data = boardService.viewArticle(articleNO);
 
-	    // ★ 댓글을 JSP가 쓰는 키 `comments` 로 넣기
-	    mav.addObject("comments", boardService.listCommentsWithReplies(articleNO));
+		// 뷰 이름
+		ModelAndView mav = new ModelAndView("board/viewArticle");
 
-	    return mav;
+		// model 채우기: article은 반드시 넣어 JSP가 안전하게 렌더링되게 함
+		if (data instanceof com.myspring.myproject.board.vo.ArticleVO) {
+			mav.addObject("article", (com.myspring.myproject.board.vo.ArticleVO) data);
+		} else if (data instanceof java.util.Map) {
+			@SuppressWarnings("unchecked")
+			java.util.Map<String, Object> map = (java.util.Map<String, Object>) data;
+			mav.addAllObjects(map);
+			// map에 article이 없으면 최소한 articleNO라도 넣어줌(뷰에서 참조 가능)
+			if (!map.containsKey("article")) {
+				mav.addObject("articleNO", articleNO);
+			}
+		} else {
+			// 혹시 예상치 못한 타입이면 안전망으로 articleNO만 전달
+			mav.addObject("articleNO", articleNO);
+		}
+
+		// 댓글 트리
+		mav.addObject("comments", boardService.listCommentsWithReplies(articleNO));
+
+		// JSP에서 사용하는 액션 경로(네가 이미 c:set 기본값 써도 되지만, 명시적으로도 넣어둠)
+		mav.addObject("actionCommentAdd", "comment/add.do");
+		mav.addObject("actionCommentReply", "comment/reply.do");
+
+		return mav;
 	}
-	
-	/* ----------  헬퍼들 ---------- */
+
+	/* ---------- 헬퍼들 ---------- */
 	private Map<String, Object> toArticleViewModel(ArticleVO a) {
-	    Map<String, Object> m = new java.util.LinkedHashMap<>();
-	    // id / 번호
-	    m.put("id",  getByAny(a, new String[]{"getArticleNO","getId","getNo"}, Integer.class, 0));
-	    // 제목
-	    m.put("title", nvl(getByAny(a, new String[]{"getTitle"}, String.class, null), "제목 없음"));
-	    // 작성자 표시명(authorName): writer, id, author 순으로 시도
-	    m.put("authorName", nvl(getByAny(a, new String[]{"getWriter","getId","getAuthor","getAuthorName"}, String.class, null), "익명"));
-	    // 작성일(publishedAt): writeDate, createdAt, regDate 순
-	    java.util.Date published = getByAny(a, new String[]{"getWriteDate","getCreatedAt","getRegDate"}, java.util.Date.class, null);
-	    m.put("publishedAt", published);
-	    // 조회수(views): viewCnt, views, hit, readCount 순
-	    Integer views = getByAny(a, new String[]{"getViewCnt","getViews","getHit","getReadCount"}, Integer.class, null);
-	    m.put("views", views != null ? views : 0);
-	    // 대표 이미지 -> heroUrl
-	    String imageName = getByAny(a, new String[]{"getImageFileName","getThumbnail","getHero"}, String.class, null);
-	    m.put("heroUrl", imageName == null || imageName.isEmpty() ? null : ("/files/article/" + imageName));
-	    // 본문 -> html 로 내려서 JSP에서 바로 출력 (XSS 필터링은 서비스단에서)
-	    String content = getByAny(a, new String[]{"getContent","getHtml","getBody"}, String.class, null);
-	    m.put("html", content);
-	    // 옵션 필드들(없어도 JSP는 문제 없음)
-	    m.put("images", java.util.Collections.emptyList());
-	    m.put("tags",   java.util.Collections.emptyList());
-	    return m;
+		Map<String, Object> m = new java.util.LinkedHashMap<>();
+		// id / 번호
+		m.put("id", getByAny(a, new String[] { "getArticleNO", "getId", "getNo" }, Integer.class, 0));
+		// 제목
+		m.put("title", nvl(getByAny(a, new String[] { "getTitle" }, String.class, null), "제목 없음"));
+		// 작성자 표시명(authorName): writer, id, author 순으로 시도
+		m.put("authorName", nvl(
+				getByAny(a, new String[] { "getWriter", "getId", "getAuthor", "getAuthorName" }, String.class, null),
+				"익명"));
+		// 작성일(publishedAt): writeDate, createdAt, regDate 순
+		java.util.Date published = getByAny(a, new String[] { "getWriteDate", "getCreatedAt", "getRegDate" },
+				java.util.Date.class, null);
+		m.put("publishedAt", published);
+		// 조회수(views): viewCnt, views, hit, readCount 순
+		Integer views = getByAny(a, new String[] { "getViewCnt", "getViews", "getHit", "getReadCount" }, Integer.class,
+				null);
+		m.put("views", views != null ? views : 0);
+		// 대표 이미지 -> heroUrl
+		String imageName = getByAny(a, new String[] { "getImageFileName", "getThumbnail", "getHero" }, String.class,
+				null);
+		m.put("heroUrl", imageName == null || imageName.isEmpty() ? null : ("/files/article/" + imageName));
+		// 본문 -> html 로 내려서 JSP에서 바로 출력 (XSS 필터링은 서비스단에서)
+		String content = getByAny(a, new String[] { "getContent", "getHtml", "getBody" }, String.class, null);
+		m.put("html", content);
+		// 옵션 필드들(없어도 JSP는 문제 없음)
+		m.put("images", java.util.Collections.emptyList());
+		m.put("tags", java.util.Collections.emptyList());
+		return m;
 	}
 
-	private Map<String,Object> minimumArticleVM(int articleNO){
-	    Map<String,Object> m = new java.util.LinkedHashMap<>();
-	    m.put("id", articleNO);
-	    m.put("title", "게시글");
-	    m.put("authorName", "익명");
-	    m.put("publishedAt", null);
-	    m.put("views", 0);
-	    m.put("heroUrl", null);
-	    m.put("html", "");
-	    m.put("images", java.util.Collections.emptyList());
-	    m.put("tags",   java.util.Collections.emptyList());
-	    return m;
+	private Map<String, Object> minimumArticleVM(int articleNO) {
+		Map<String, Object> m = new java.util.LinkedHashMap<>();
+		m.put("id", articleNO);
+		m.put("title", "게시글");
+		m.put("authorName", "익명");
+		m.put("publishedAt", null);
+		m.put("views", 0);
+		m.put("heroUrl", null);
+		m.put("html", "");
+		m.put("images", java.util.Collections.emptyList());
+		m.put("tags", java.util.Collections.emptyList());
+		return m;
 	}
 
 	@SuppressWarnings("unchecked")
 	private static <T> T getByAny(Object bean, String[] getters, Class<T> type, T defVal) {
-	    for (String g : getters) {
-	        try {
-	            java.lang.reflect.Method m = bean.getClass().getMethod(g);
-	            Object v = m.invoke(bean);
-	            if (v != null && type.isAssignableFrom(v.getClass())) return (T) v;
-	            if (v != null && type == String.class) return (T) v.toString();
-	        } catch (NoSuchMethodException ignore) {
-	        } catch (Exception e) {
-	            // 로깅 원하면 추가
-	        }
-	    }
-	    return defVal;
+		for (String g : getters) {
+			try {
+				java.lang.reflect.Method m = bean.getClass().getMethod(g);
+				Object v = m.invoke(bean);
+				if (v != null && type.isAssignableFrom(v.getClass()))
+					return (T) v;
+				if (v != null && type == String.class)
+					return (T) v.toString();
+			} catch (NoSuchMethodException ignore) {
+			} catch (Exception e) {
+				// 로깅 원하면 추가
+			}
+		}
+		return defVal;
 	}
 
-	private static String nvl(String s, String def){ return (s == null || s.trim().isEmpty()) ? def : s; }
+	private static String nvl(String s, String def) {
+		return (s == null || s.trim().isEmpty()) ? def : s;
+	}
 
-	private static Object firstNonNull(Object... arr){
-	    for(Object o: arr) if(o != null) return o;
-	    return null;
+	private static Object firstNonNull(Object... arr) {
+		for (Object o : arr)
+			if (o != null)
+				return o;
+		return null;
 	}
 
 	/** Map으로 기사 내려온 경우, JSP 필수 키 최소 보장 */
-	private static void ensureKeys(Map<String,Object> m){
-	    m.putIfAbsent("id", 0);
-	    m.putIfAbsent("title", "게시글");
-	    m.putIfAbsent("authorName", "익명");
-	    m.putIfAbsent("publishedAt", null);
-	    m.putIfAbsent("views", 0);
-	    m.putIfAbsent("heroUrl", null);
-	    m.putIfAbsent("html", "");
-	    m.putIfAbsent("images", java.util.Collections.emptyList());
-	    m.putIfAbsent("tags",   java.util.Collections.emptyList());
+	private static void ensureKeys(Map<String, Object> m) {
+		m.putIfAbsent("id", 0);
+		m.putIfAbsent("title", "게시글");
+		m.putIfAbsent("authorName", "익명");
+		m.putIfAbsent("publishedAt", null);
+		m.putIfAbsent("views", 0);
+		m.putIfAbsent("heroUrl", null);
+		m.putIfAbsent("html", "");
+		m.putIfAbsent("images", java.util.Collections.emptyList());
+		m.putIfAbsent("tags", java.util.Collections.emptyList());
 	}
 
 	/*
@@ -355,74 +382,75 @@ public class BoardControllerImpl {
 	 * ==============================
 	 */
 	// 수정 폼 열기 (GET)
-	@RequestMapping(value="/modArticleForm.do", method=RequestMethod.GET)
+	@RequestMapping(value = "/modArticleForm.do", method = RequestMethod.GET)
 	public ModelAndView modArticleForm(HttpServletRequest request) throws Exception {
-	    String sNo = request.getParameter("articleNO");
-	    if (sNo == null || sNo.trim().isEmpty()) {
-	        return new ModelAndView("redirect:/board/listArticles.do");
-	    }
-	    int articleNO = Integer.parseInt(sNo);
+		String sNo = request.getParameter("articleNO");
+		if (sNo == null || sNo.trim().isEmpty()) {
+			return new ModelAndView("redirect:/board/listArticles.do");
+		}
+		int articleNO = Integer.parseInt(sNo);
 
-	    // 기존 글 불러오기 (ArticleVO 또는 Map 반환 지원)
-	    Object data = boardService.viewArticle(articleNO);
+		// 기존 글 불러오기 (ArticleVO 또는 Map 반환 지원)
+		Object data = boardService.viewArticle(articleNO);
 
-	    ModelAndView mav = new ModelAndView("board/modArticleForm"); // 수정 전용 JSP
-	    if (data instanceof ArticleVO) {
-	        mav.addObject("article", data);
-	    } else if (data instanceof Map) {
-	        @SuppressWarnings("unchecked")
-	        Map<String,Object> m = (Map<String,Object>) data;
-	        mav.addAllObjects(m);
-	    }
-	    mav.addObject("mode", "edit");
-	    // 폼 action을 명확히 지정(기본이 addNewArticle로 가는 문제 방지)
-	    mav.addObject("formAction", request.getContextPath() + "/board/modArticle.do");
-	    return mav;
+		ModelAndView mav = new ModelAndView("board/modArticleForm"); // 수정 전용 JSP
+		if (data instanceof ArticleVO) {
+			mav.addObject("article", data);
+		} else if (data instanceof Map) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> m = (Map<String, Object>) data;
+			mav.addAllObjects(m);
+		}
+		mav.addObject("mode", "edit");
+		// 폼 action을 명확히 지정(기본이 addNewArticle로 가는 문제 방지)
+		mav.addObject("formAction", request.getContextPath() + "/board/modArticle.do");
+		return mav;
 	}
 
 	// 수정 저장 (POST)
-	@RequestMapping(value="/modArticle.do", method=RequestMethod.POST)
+	@RequestMapping(value = "/modArticle.do", method = RequestMethod.POST)
 	public ModelAndView modArticle(MultipartHttpServletRequest req) throws Exception {
-	    req.setCharacterEncoding("utf-8");
+		req.setCharacterEncoding("utf-8");
 
-	    // 글번호 필수
-	    String sNo = req.getParameter("articleNO");
-	    if (sNo == null || sNo.trim().isEmpty()) {
-	        return new ModelAndView("redirect:/board/listArticles.do");
-	    }
-	    int articleNO = Integer.parseInt(sNo);
+		// 글번호 필수
+		String sNo = req.getParameter("articleNO");
+		if (sNo == null || sNo.trim().isEmpty()) {
+			return new ModelAndView("redirect:/board/listArticles.do");
+		}
+		int articleNO = Integer.parseInt(sNo);
 
-	    // 파라미터 수집
-	    Map<String,Object> map = new HashMap<String,Object>();
-	    for (Enumeration<?> e = req.getParameterNames(); e.hasMoreElements();) {
-	        String name = (String) e.nextElement();
-	        map.put(name, req.getParameter(name));
-	    }
-	    map.put("articleNO", articleNO);
+		// 파라미터 수집
+		Map<String, Object> map = new HashMap<String, Object>();
+		for (Enumeration<?> e = req.getParameterNames(); e.hasMoreElements();) {
+			String name = (String) e.nextElement();
+			map.put(name, req.getParameter(name));
+		}
+		map.put("articleNO", articleNO);
 
-	    // 로그인 아이디 들어가야 권한 체크/갱신 되는 매퍼라면 주입
-	    String loginId = resolveLoginId(req);
-	    if (loginId != null && loginId.trim().length() > 0) {
-	        map.put("id", loginId);
-	    }
+		// 로그인 아이디 들어가야 권한 체크/갱신 되는 매퍼라면 주입
+		String loginId = resolveLoginId(req);
+		if (loginId != null && loginId.trim().length() > 0) {
+			map.put("id", loginId);
+		}
 
-	    // 새 파일이 올라온 경우에만 교체
-	    MultipartFile imageFile = pickFirstFile(req); // imageFile / imageFileName 둘 다 대응
-	    String newImage = saveToTempAndReturnFileName(imageFile);
-	    if (newImage != null && newImage.trim().length() > 0) {
-	        map.put("imageFileName", newImage); // mapper에서 <if test="imageFileName != null and imageFileName != ''"> 로 처리
-	    }
+		// 새 파일이 올라온 경우에만 교체
+		MultipartFile imageFile = pickFirstFile(req); // imageFile / imageFileName 둘 다 대응
+		String newImage = saveToTempAndReturnFileName(imageFile);
+		if (newImage != null && newImage.trim().length() > 0) {
+			map.put("imageFileName", newImage); // mapper에서 <if test="imageFileName != null and imageFileName != ''"> 로
+												// 처리
+		}
 
-	    // DB 업데이트
-	    boardService.modArticle(map);
+		// DB 업데이트
+		boardService.modArticle(map);
 
-	    // 파일 이동(새 파일이 있는 경우만)
-	    if (newImage != null && newImage.trim().length() > 0) {
-	        moveImageFromTemp(articleNO, newImage);
-	    }
+		// 파일 이동(새 파일이 있는 경우만)
+		if (newImage != null && newImage.trim().length() > 0) {
+			moveImageFromTemp(articleNO, newImage);
+		}
 
-	    // 수정 후 해당 글 보기로 이동
-	    return new ModelAndView("redirect:/board/viewArticle.do?articleNO=" + articleNO);
+		// 수정 후 해당 글 보기로 이동
+		return new ModelAndView("redirect:/board/viewArticle.do?articleNO=" + articleNO);
 	}
 
 	/*
@@ -510,53 +538,51 @@ public class BoardControllerImpl {
 		}
 		serveImage(Integer.parseInt(sNo), fileName, response);
 	}
-	
+
 	/** 댓글 등록 */
 	@RequestMapping(value = "/addComment.do", method = RequestMethod.POST)
-	public String addComment(@RequestParam("articleNO") int articleNO,
-	                         @RequestParam("content") String content,
-	                         @RequestParam(value = "parentId", required = false) Long parentId,
-	                         @RequestParam(value = "photos",   required = false) java.util.List<MultipartFile> photos,
-	                         javax.servlet.http.HttpSession session) {
-	    // 로그인 사용자 아이디/닉네임 꺼내는 부분은 프로젝트에 맞춰 조정
-	    String writer = null;
-	    Object m = session.getAttribute("member");
-	    if (m != null) {
-	        try {
-	            // 예: MemberVO에 getId() 또는 getName() 등이 있다면 거기 맞춰 사용
-	            writer = (String)m.getClass().getMethod("getId").invoke(m);
-	        } catch (Exception ignore) {}
-	    }
+	public String addComment(@RequestParam("articleNO") int articleNO, @RequestParam("content") String content,
+			@RequestParam(value = "parentId", required = false) Long parentId,
+			@RequestParam(value = "photos", required = false) java.util.List<MultipartFile> photos,
+			javax.servlet.http.HttpSession session) {
+		// 로그인 사용자 아이디/닉네임 꺼내는 부분은 프로젝트에 맞춰 조정
+		String writer = null;
+		Object m = session.getAttribute("member");
+		if (m != null) {
+			try {
+				// 예: MemberVO에 getId() 또는 getName() 등이 있다면 거기 맞춰 사용
+				writer = (String) m.getClass().getMethod("getId").invoke(m);
+			} catch (Exception ignore) {
+			}
+		}
 
-	    com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
-	    dto.setArticleNo(articleNO); // ★ 필드명 주의: setArticleNo
-	    dto.setContent(content);
-	    dto.setParentId(parentId);
-	    dto.setWriter(writer);
+		com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
+		dto.setArticleNo(articleNO); // ★ 필드명 주의: setArticleNo
+		dto.setContent(content);
+		dto.setParentId(parentId);
+		dto.setWriter(writer);
 
-	    commentService.addComment(dto); // 파일 저장/첨부는 나중에 확장
+		commentService.addComment(dto); // 파일 저장/첨부는 나중에 확장
 
-	    return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
+		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
 	}
 
 	/** (선택) 대댓글도 같은 메서드를 써도 되지만 따로 두고 싶다면 */
 	@RequestMapping(value = "/replyComment.do", method = RequestMethod.POST)
-	public String replyComment(@RequestParam("articleNO") int articleNO,
-	                           @RequestParam("content") String content,
-	                           @RequestParam("parentId") Long parentId) {
-	    com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
-	    dto.setArticleNo(articleNO);
-	    dto.setContent(content);
-	    dto.setParentId(parentId);
-	    commentService.addComment(dto);
-	    return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
+	public String replyComment(@RequestParam("articleNO") int articleNO, @RequestParam("content") String content,
+			@RequestParam("parentId") Long parentId) {
+		com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
+		dto.setArticleNo(articleNO);
+		dto.setContent(content);
+		dto.setParentId(parentId);
+		commentService.addComment(dto);
+		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
 	}
 
 	/** (선택) 댓글 삭제 */
 	@RequestMapping(value = "/deleteComment.do", method = RequestMethod.POST)
-	public String deleteComment(@RequestParam("id") Long id,
-	                            @RequestParam("articleNO") int articleNO) {
-	    commentService.deleteComment(id); // 구현돼있어야 함
-	    return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
+	public String deleteComment(@RequestParam("id") Long id, @RequestParam("articleNO") int articleNO) {
+		commentService.deleteComment(id); // 구현돼있어야 함
+		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
 	}
 }

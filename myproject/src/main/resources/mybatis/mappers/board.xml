@@ -4,6 +4,24 @@
 
 <mapper namespace="mapper.board">
 
+	<!-- 단건 조회용: 작성자 정보 포함 -->
+	<resultMap id="articleResultMap"
+		type="com.myspring.myproject.board.vo.ArticleVO">
+		<id property="articleNO" column="articleNO" />
+		<result property="parentNO" column="parentNO" />
+		<result property="title" column="title" />
+		<result property="content" column="content" />
+		<result property="writeDate" column="writeDate"
+			jdbcType="TIMESTAMP" />
+		<result property="imageFileName" column="imageFileName" />
+		<result property="id" column="id" />           <!-- t_board.id (글쓴이 로그인ID, 문자열) -->
+		<result property="cat" column="cat" />
+		<result property="sub" column="sub" />
+		<result property="writerId" column="writerId" />     <!-- = a.id -->
+		<result property="writerName" column="writerName" />   <!-- = IFNULL(m.name, a.id) -->
+	</resultMap>
+
+	<!-- 목록용: level/카테고리 포함 -->
 	<resultMap id="articlesResult"
 		type="com.myspring.myproject.board.vo.ArticleVO">
 		<id property="articleNO" column="articleNO" />
@@ -19,7 +37,28 @@
 		<result property="sub" column="sub" />
 	</resultMap>
 
-	<!-- 목록 (계층/정렬 포함, cat/sub 필터 지원) -->
+	<!-- 단건 조회 (※ member_id 유무와 무관하게 동작하도록 a.id만 사용) -->
+	<select id="selectArticle" parameterType="int"
+		resultMap="articleResultMap">
+		SELECT
+		a.articleNO,
+		a.parentNO,
+		a.title,
+		a.content,
+		a.writeDate,
+		a.imageFileName,
+		a.id, -- t_board.id (로그인ID 문자열)
+		a.cat,
+		a.sub,
+		a.id AS writerId, -- VO.writerId
+		IFNULL(m.name, a.id) AS writerName
+		FROM t_board a
+		LEFT JOIN t_member m
+		ON m.id = a.id
+		WHERE a.articleNO = #{articleNO}
+	</select>
+
+	<!-- 계층형 목록 (필터/정렬 포함) -->
 	<select id="selectAllArticlesList" parameterType="map"
 		resultMap="articlesResult">
 		SELECT
@@ -28,55 +67,54 @@
 		b.imageFileName, b.id, b.cat, b.sub
 		FROM t_board b
 		WHERE 1=1
-		<if test="cat != null and cat != ''"> AND b.cat = #{cat} </if>
-		<if test="sub != null and sub != ''"> AND b.sub = #{sub} </if>
+		<if test="cat != null and cat != ''">
+			AND b.cat = #{cat}
+		</if>
+		<if test="sub != null and sub != ''">
+			AND b.sub = #{sub}
+		</if>
 		ORDER BY
 		IFNULL(NULLIF(b.parentNO,0), b.articleNO) DESC,
-		CASE WHEN
-		IFNULL(b.parentNO,0)=0 THEN 0 ELSE 1 END,
+		CASE WHEN IFNULL(b.parentNO,0)=0 THEN 0 ELSE 1 END,
 		b.articleNO ASC
-		<if test="limit != null"> LIMIT #{limit} </if>
+		<if test="limit != null">
+			LIMIT #{limit}
+		</if>
 	</select>
 
-	<!-- 단건 조회 -->
-	<select id="selectArticle" parameterType="int"
-		resultType="com.myspring.myproject.board.vo.ArticleVO">
-		SELECT articleNO, title, content, imageFileName, id,
-		parentNO, writeDate,
-		cat, sub
-		FROM t_board
-		WHERE articleNO = #{articleNO}
-	</select>
-
-	<!-- 평면 목록(페이징 옵션) -->
+	<!-- 평면 목록(페이징) -->
 	<select id="selectAllArticles" parameterType="map"
 		resultType="com.myspring.myproject.board.vo.ArticleVO">
 		SELECT articleNO, title, content, imageFileName, id, parentNO,
 		writeDate, cat, sub
 		FROM t_board
 		WHERE 1=1
-		<if test="parentNO != null"> AND parentNO = #{parentNO} </if>
-		<if test="cat != null and cat != ''"> AND cat = #{cat} </if>
-		<if test="sub != null and sub != ''"> AND sub = #{sub} </if>
+		<if test="parentNO != null">
+			AND parentNO = #{parentNO}
+		</if>
+		<if test="cat != null and cat != ''">
+			AND cat = #{cat}
+		</if>
+		<if test="sub != null and sub != ''">
+			AND sub = #{sub}
+		</if>
 		ORDER BY articleNO DESC
 		<if test="size != null and offset != null">
 			LIMIT #{size} OFFSET #{offset}
 		</if>
 	</select>
 
-	<!-- 글 등록: MySQL/MariaDB auto_increment 가정 -->
+	<!-- 등록 -->
 	<insert id="insertNewArticle" parameterType="map"
 		useGeneratedKeys="true" keyProperty="articleNO" keyColumn="articleNO">
-		INSERT INTO
-		t_board
-		(title, content, imageFileName, id, parentNO, writeDate, cat,
-		sub)
+		INSERT INTO t_board
+		(title, content, imageFileName, id, parentNO, writeDate, cat, sub)
 		VALUES
 		(#{title}, #{content}, #{imageFileName}, #{id},
 		IFNULL(#{parentNO},0), NOW(), #{cat}, #{sub})
 	</insert>
 
-	<!-- 글 수정(이미지 선택적 갱신) -->
+	<!-- 수정 -->
 	<update id="updateArticle" parameterType="map">
 		UPDATE t_board
 		SET title = #{title},
@@ -87,12 +125,12 @@
 			, imageFileName = #{imageFileName}
 		</if>
 		WHERE articleNO = #{articleNO}
-		<!-- (권한 체크할 거면 AND id = #{id}) -->
 	</update>
-	<!-- 글/답글 일괄 삭제 -->
+
+	<!-- 삭제(원글/자식글 함께) -->
 	<delete id="deleteArticle" parameterType="int">
 		DELETE FROM t_board
-		WHERE articleNO = #{articleNO} OR parentNO = #{articleNO}
+		WHERE articleNO = #{articleNO}
+		OR parentNO = #{articleNO}
 	</delete>
-
 </mapper>

@@ -1,77 +1,84 @@
 package com.myspring.myproject.board.controller;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.myspring.myproject.board.dto.CommentDTO;
 import com.myspring.myproject.board.service.CommentService;
+import com.myspring.myproject.vo.MemberVO; // 사용 중인 VO 패키지에 맞춰 조정
 
 @Controller
-@RequestMapping("/board") // <- /board 고정
+@RequestMapping("/board/comment")
 public class CommentController {
 
 	@Autowired
 	private CommentService commentService;
 
-	// 헬스체크: 이게 404면 컨트롤러 스캔/매핑 자체가 안 된 것
-	@RequestMapping(value = "/comment/ping.do", method = RequestMethod.GET)
-	@ResponseBody
-	public String ping() {
-		return "OK";
+	// 로그인 정보 헬퍼
+	private static class Login {
+		final String id; // FK 저장용(문자열로 통일)
+		final String displayName; // 댓글 표시용
+
+		Login(HttpSession session) {
+			String idStr = null, nameStr = null;
+
+			Object u = session.getAttribute("member");
+			if (u == null)
+				u = session.getAttribute("loginUser");
+			if (u instanceof MemberVO) {
+				MemberVO m = (MemberVO) u;
+				// m.getId()가 숫자면 문자열로 바꿔줌
+				idStr = String.valueOf(m.getId());
+				nameStr = m.getName();
+				if (nameStr == null || nameStr.trim().isEmpty())
+					nameStr = idStr;
+			}
+			this.id = idStr;
+			this.displayName = nameStr;
+		}
+
+		boolean loggedIn() {
+			return id != null;
+		}
 	}
 
-	@RequestMapping(value = "/comment/add.do", method = RequestMethod.POST)
-	public String addComment(
-	        HttpServletRequest request,
-	        @RequestParam(value = "articleNO", required = false) Integer articleNO,
-	        @RequestParam(value = "articleNo", required = false) Integer articleNo2,
-	        @RequestParam(value = "articleId", required = false) Integer articleId,
-	        @RequestParam(value = "article_no", required = false) Integer article_no_alt,
-	        @ModelAttribute CommentDTO commentDTO
-	) {
-	    // 1) 어떤 파라미터로 오든 하나로 정리
-	    Integer aNo = firstNonNull(articleNO, articleNo2, articleId, article_no_alt, commentDTO.getArticleNo());
+	/** 댓글 등록 (최상위/대댓글 공용) */
+	@RequestMapping(value = "/add.do", method = RequestMethod.POST)
+	public String addComment(@RequestParam("articleNO") int articleNo,
+			@RequestParam(value = "parentId", required = false) Long parentId, @RequestParam("content") String content,
+			HttpSession session, RedirectAttributes rttr) {
 
-	    if (aNo == null) {
-	        // 필요하면 여기서 request.getParameterMap()을 로그로 찍어 보세요
-	        throw new IllegalArgumentException("articleNO(=게시글 번호) 파라미터가 누락되었습니다.");
-	    }
+		Login login = new Login(session);
+		if (!login.loggedIn()) {
+			rttr.addFlashAttribute("error", "로그인 후 댓글을 작성할 수 있습니다.");
+			return "redirect:/board/viewArticle.do?articleNO=" + articleNo;
+		}
 
-	    // 2) DTO에 확실히 세팅
-	    commentDTO.setArticleNo(aNo);
-
-	    // 3) 저장
-	    commentService.addComment(commentDTO);
-
-	    // 4) 원문으로 리다이렉트 (프로젝트 경로에 맞게)
-	    return "redirect:/board/viewArticle.do?articleNO=" + aNo;
-	}
-
-	// 유틸: 첫 번째 non-null 반환
-	@SafeVarargs
-	private static <T> T firstNonNull(T... values) {
-	    for (T v : values) if (v != null) return v;
-	    return null;
-	}
-
-	@RequestMapping(value = "/comment/reply.do", method = RequestMethod.POST)
-	public String replyComment(@RequestParam("articleNO") Integer articleNo, @RequestParam("parentId") Long parentId,
-			@RequestParam("content") String content, @RequestParam(value = "writer", required = false) String writer) {
-
+		// DTO 채우기 (타입 맞춤: setArticleNo(Integer), setParentId(Long),
+		// setMemberId(String))
 		CommentDTO dto = new CommentDTO();
-		dto.setArticleNo(articleNo);
-		dto.setParentId(parentId);
-		dto.setWriter((writer == null || writer.trim().isEmpty()) ? "익명" : writer.trim());
+		dto.setArticleNo(Integer.valueOf(articleNo));
+		dto.setParentId((parentId != null && parentId > 0) ? parentId : null);
 		dto.setContent(content);
+		dto.setWriter(login.displayName); // 화면 표시용
+		dto.setMemberId(login.id); // FK 저장용
 
 		commentService.addComment(dto);
 		return "redirect:/board/viewArticle.do?articleNO=" + articleNo;
+	}
+
+	/** 대댓글 전용 엔드포인트 (폼 action='comment/reply.do'인 경우 여기로) */
+	@RequestMapping(value = "/reply.do", method = RequestMethod.POST)
+	public String replyComment(@RequestParam("articleNO") int articleNo, @RequestParam("parentId") Long parentId,
+			@RequestParam("content") String content, HttpSession session, RedirectAttributes rttr) {
+
+		// 결국 add.do 로직 그대로 사용
+		return addComment(articleNo, parentId, content, session, rttr);
 	}
 }

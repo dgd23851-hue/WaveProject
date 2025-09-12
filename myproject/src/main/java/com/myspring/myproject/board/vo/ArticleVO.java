@@ -1,47 +1,47 @@
 package com.myspring.myproject.board.vo;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.util.Date; // ← 여기! java.util.Date로 변경
+import java.util.Date;
 
-import org.springframework.stereotype.Component;
-
-@Component("articleVO")
 public class ArticleVO {
-	private int level;
-	private int articleNO;
-	private int parentNO;
+	private Integer articleNO;
+	private Integer parentNO;
 	private String title;
 	private String content;
+	private Date writeDate;
 	private String imageFileName;
-	private String id;
-	private Date writeDate; // ← 타입 변경
 
-	public ArticleVO() {
-	}
+	// 작성자/카테고리
+	private String id; // t_board.id (로그인ID 문자열)
+	private String cat;
+	private String sub;
 
-	public int getLevel() {
-		return level;
-	}
+	// JOIN으로 채우는 표시용 필드
+	private String writerId; // = a.id
+	private String writerName; // = m.name (없으면 a.id)
 
-	public void setLevel(int level) {
-		this.level = level;
-	}
-
-	public int getArticleNO() {
+	// --- getters/setters ---
+	public Integer getArticleNO() {
 		return articleNO;
 	}
 
-	public void setArticleNO(int articleNO) {
+	public void setArticleNO(Integer articleNO) {
 		this.articleNO = articleNO;
 	}
 
-	public int getParentNO() {
+	// alias (articleNo 이름도 지원)
+	public Integer getArticleNo() {
+		return articleNO;
+	}
+
+	public void setArticleNo(Integer articleNo) {
+		this.articleNO = articleNo;
+	}
+
+	public Integer getParentNO() {
 		return parentNO;
 	}
 
-	public void setParentNO(int parentNO) {
+	public void setParentNO(Integer parentNO) {
 		this.parentNO = parentNO;
 	}
 
@@ -61,25 +61,20 @@ public class ArticleVO {
 		this.content = content;
 	}
 
+	public Date getWriteDate() {
+		return writeDate;
+	}
+
+	public void setWriteDate(Date writeDate) {
+		this.writeDate = writeDate;
+	}
+
 	public String getImageFileName() {
-		try {
-			if (imageFileName != null && !imageFileName.isEmpty()) {
-				imageFileName = URLDecoder.decode(imageFileName, "UTF-8");
-			}
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
 		return imageFileName;
 	}
 
 	public void setImageFileName(String imageFileName) {
-		try {
-			if (imageFileName != null && !imageFileName.isEmpty()) {
-				this.imageFileName = URLEncoder.encode(imageFileName, "UTF-8");
-			}
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
+		this.imageFileName = imageFileName;
 	}
 
 	public String getId() {
@@ -89,17 +84,6 @@ public class ArticleVO {
 	public void setId(String id) {
 		this.id = id;
 	}
-
-	public Date getWriteDate() {
-		return writeDate;
-	}
-
-	public void setWriteDate(Date writeDate) {
-		this.writeDate = writeDate;
-	}
-
-	private String cat; // 섹션
-	private String sub; // 세부
 
 	public String getCat() {
 		return cat;
@@ -115,5 +99,21 @@ public class ArticleVO {
 
 	public void setSub(String sub) {
 		this.sub = sub;
+	}
+
+	public String getWriterId() {
+		return writerId;
+	}
+
+	public void setWriterId(String writerId) {
+		this.writerId = writerId;
+	}
+
+	public String getWriterName() {
+		return writerName;
+	}
+
+	public void setWriterName(String writerName) {
+		this.writerName = writerName;
 	}
 }
