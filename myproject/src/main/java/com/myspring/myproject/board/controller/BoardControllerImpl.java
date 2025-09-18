@@ -2,12 +2,19 @@ package com.myspring.myproject.board.controller;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -21,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
@@ -56,11 +64,11 @@ public class BoardControllerImpl {
 			m.put(k, v);
 	}
 
-	/** 업로드 베이스 경로 (web.xml의 context-param: articleImageRepo 우선) */
+	/** 업로드 베이스 경로 (web.xml context-param: articleImageRepo 우선) */
 	private String getImageRepo() {
 		String path = servletContext.getInitParameter("articleImageRepo");
 		if (isBlank(path)) {
-			// 로컬(Windows) 기본값 vs 카페24(Linux) 기본값
+			// 로컬(Windows) vs 카페24(Linux) 기본값
 			path = (File.separatorChar == '\\') ? "C:\\board\\article_image"
 					: "/home/hosting_users/계정명/www/board/article_image";
 		}
@@ -129,9 +137,8 @@ public class BoardControllerImpl {
 			if (v instanceof String && !isBlank((String) v))
 				return (String) v;
 
-			String from;
 			v = session.getAttribute("member");
-			from = getIdByReflection(v);
+			String from = getIdByReflection(v);
 			if (!isBlank(from))
 				return from;
 
@@ -157,7 +164,6 @@ public class BoardControllerImpl {
 		return null;
 	}
 
-	/** MemberVO 등에 getId()가 있으면 꺼낸다 */
 	private String getIdByReflection(Object obj) {
 		if (obj == null)
 			return null;
@@ -168,27 +174,71 @@ public class BoardControllerImpl {
 		}
 	}
 
-	/*
-	 * ============================== 목록 ==============================
-	 */
+	/* ============================== 목록 ============================== */
 	@RequestMapping(value = "/listArticles.do", method = RequestMethod.GET)
 	public ModelAndView listArticles(HttpServletRequest request) throws Exception {
 		String cat = trim(request.getParameter("cat"));
 		String sub = trim(request.getParameter("sub"));
 		String page = trim(request.getParameter("page"));
 		String size = trim(request.getParameter("size"));
+		String q = trim(request.getParameter("q")); // 검색어
 
 		Map<String, Object> searchMap = new HashMap<String, Object>();
 		putIfNotBlank(searchMap, "cat", cat);
 		putIfNotBlank(searchMap, "category", cat); // 매퍼 별칭 호환
 		putIfNotBlank(searchMap, "sub", sub);
 		putIfNotBlank(searchMap, "subcategory", sub);
+		putIfNotBlank(searchMap, "q", q);
+		putIfNotBlank(searchMap, "keyword", q);
 		if (!isBlank(page))
 			searchMap.put("page", Integer.parseInt(page));
 		if (!isBlank(size))
 			searchMap.put("size", Integer.parseInt(size));
 
-		List<ArticleVO> list = boardService.listArticles(searchMap);
+		java.util.List<ArticleVO> list = boardService.listArticles(searchMap);
+
+		// 매퍼가 검색을 아직 지원하지 않아도 동작하도록 메모리에서 2차 필터
+		if (!isBlank(q) && list != null && !list.isEmpty()) {
+			final String needle = q.toLowerCase();
+			java.util.List<ArticleVO> filtered = new java.util.ArrayList<>();
+			for (ArticleVO a : list) {
+				boolean hit = false;
+				try {
+					String title = null;
+					try {
+						title = (String) a.getClass().getMethod("getTitle").invoke(a);
+					} catch (Exception ignore) {
+					}
+					String content = null;
+					try {
+						content = (String) a.getClass().getMethod("getContent").invoke(a);
+					} catch (Exception ignore) {
+					}
+					String summary = null;
+					try {
+						summary = (String) a.getClass().getMethod("getSummary").invoke(a);
+					} catch (Exception ignore) {
+					}
+					String tags = null;
+					try {
+						tags = (String) a.getClass().getMethod("getTags").invoke(a);
+					} catch (Exception ignore) {
+					}
+					if (title != null && title.toLowerCase().contains(needle))
+						hit = true;
+					else if (content != null && content.toLowerCase().contains(needle))
+						hit = true;
+					else if (summary != null && summary.toLowerCase().contains(needle))
+						hit = true;
+					else if (tags != null && tags.toLowerCase().contains(needle))
+						hit = true;
+				} catch (Exception ignore) {
+				}
+				if (hit)
+					filtered.add(a);
+			}
+			list = filtered;
+		}
 
 		ModelAndView mav = new ModelAndView("board/listArticles");
 		mav.addObject("articlesList", list);
@@ -200,29 +250,32 @@ public class BoardControllerImpl {
 		mav.addObject("sub", sub);
 		mav.addObject("curCat", cat);
 		mav.addObject("curSub", sub);
+		mav.addObject("q", q); // 현재 검색어 유지
 		return mav;
 	}
 
-	/*
-	 * ============================== 글쓰기 폼 ==============================
-	 */
+	/* ============================== 글쓰기 폼 ============================== */
 	@RequestMapping(value = "/articleForm.do", method = RequestMethod.GET)
 	public ModelAndView articleForm(HttpServletRequest request) {
 		ModelAndView mav = new ModelAndView("board/articleForm");
-		mav.addObject("cat", trim(request.getParameter("cat")));
-		mav.addObject("sub", trim(request.getParameter("sub")));
+		HttpSession s = request.getSession(false);
+		if (s != null) {
+			Object d = s.getAttribute("draftArticle");
+			if (d instanceof Map) {
+				mav.addObject("draft", d);
+				Object n = ((Map) d).get("imageFileName");
+				if (n instanceof String)
+					mav.addObject("draftImageFileName", (String) n);
+			}
+		}
 		return mav;
 	}
 
-	/*
-	 * ============================== 글 등록 (완료 후 해당 글 보기로 리다이렉트)
-	 * ==============================
-	 */
+	/* ============================== 글 등록 ============================== */
 	@RequestMapping(value = "/addNewArticle.do", method = RequestMethod.POST)
 	public ModelAndView addNewArticle(MultipartHttpServletRequest req, HttpServletResponse resp) throws Exception {
 		req.setCharacterEncoding("utf-8");
 
-		// 로그인 확인 & id 주입 (DB NOT NULL 보호: 최후엔 anonymous)
 		String loginId = resolveLoginId(req);
 		if (isBlank(loginId))
 			loginId = "anonymous";
@@ -243,79 +296,56 @@ public class BoardControllerImpl {
 		if (!isBlank(imageFileName))
 			moveImageFromTemp(articleNO, imageFileName);
 
-		// 컨텍스트 자동부착되는 redirect:/ 사용 → /myproject 중복 제거
 		return new ModelAndView("redirect:/board/viewArticle.do?articleNO=" + articleNO);
 	}
 
-	/*
-	 * ============================== 글 보기 ==============================
-	 */
+	/* ============================== 글 보기 ============================== */
 	@RequestMapping(value = "/viewArticle.do", method = RequestMethod.GET)
 	public ModelAndView viewArticle(@RequestParam(value = "articleNO", required = false) Integer articleNO) {
-
-		if (articleNO == null) {
+		if (articleNO == null)
 			return new ModelAndView("redirect:/board/listArticles.do");
-		}
 
-		// 서비스만 사용(매퍼 직접 호출 금지)
 		Object data = boardService.viewArticle(articleNO);
-
-		// 뷰 이름
 		ModelAndView mav = new ModelAndView("board/viewArticle");
 
-		// model 채우기: article은 반드시 넣어 JSP가 안전하게 렌더링되게 함
-		if (data instanceof com.myspring.myproject.board.vo.ArticleVO) {
-			mav.addObject("article", (com.myspring.myproject.board.vo.ArticleVO) data);
-		} else if (data instanceof java.util.Map) {
+		if (data instanceof ArticleVO) {
+			mav.addObject("article", (ArticleVO) data);
+		} else if (data instanceof Map) {
 			@SuppressWarnings("unchecked")
-			java.util.Map<String, Object> map = (java.util.Map<String, Object>) data;
+			Map<String, Object> map = (Map<String, Object>) data;
 			mav.addAllObjects(map);
-			// map에 article이 없으면 최소한 articleNO라도 넣어줌(뷰에서 참조 가능)
 			if (!map.containsKey("article")) {
 				mav.addObject("articleNO", articleNO);
 			}
 		} else {
-			// 혹시 예상치 못한 타입이면 안전망으로 articleNO만 전달
 			mav.addObject("articleNO", articleNO);
 		}
 
-		// 댓글 트리
 		mav.addObject("comments", boardService.listCommentsWithReplies(articleNO));
-
-		// JSP에서 사용하는 액션 경로(네가 이미 c:set 기본값 써도 되지만, 명시적으로도 넣어둠)
 		mav.addObject("actionCommentAdd", "comment/add.do");
 		mav.addObject("actionCommentReply", "comment/reply.do");
-
 		return mav;
 	}
 
-	/* ---------- 헬퍼들 ---------- */
+	/* ---------- 내부 헬퍼(뷰 모델) ---------- */
 	private Map<String, Object> toArticleViewModel(ArticleVO a) {
 		Map<String, Object> m = new java.util.LinkedHashMap<>();
-		// id / 번호
 		m.put("id", getByAny(a, new String[] { "getArticleNO", "getId", "getNo" }, Integer.class, 0));
-		// 제목
 		m.put("title", nvl(getByAny(a, new String[] { "getTitle" }, String.class, null), "제목 없음"));
-		// 작성자 표시명(authorName): writer, id, author 순으로 시도
 		m.put("authorName", nvl(
 				getByAny(a, new String[] { "getWriter", "getId", "getAuthor", "getAuthorName" }, String.class, null),
 				"익명"));
-		// 작성일(publishedAt): writeDate, createdAt, regDate 순
 		java.util.Date published = getByAny(a, new String[] { "getWriteDate", "getCreatedAt", "getRegDate" },
 				java.util.Date.class, null);
 		m.put("publishedAt", published);
-		// 조회수(views): viewCnt, views, hit, readCount 순
 		Integer views = getByAny(a, new String[] { "getViewCnt", "getViews", "getHit", "getReadCount" }, Integer.class,
 				null);
 		m.put("views", views != null ? views : 0);
-		// 대표 이미지 -> heroUrl
 		String imageName = getByAny(a, new String[] { "getImageFileName", "getThumbnail", "getHero" }, String.class,
 				null);
 		m.put("heroUrl", imageName == null || imageName.isEmpty() ? null : ("/files/article/" + imageName));
-		// 본문 -> html 로 내려서 JSP에서 바로 출력 (XSS 필터링은 서비스단에서)
 		String content = getByAny(a, new String[] { "getContent", "getHtml", "getBody" }, String.class, null);
 		m.put("html", content);
-		// 옵션 필드들(없어도 JSP는 문제 없음)
 		m.put("images", java.util.Collections.emptyList());
 		m.put("tags", java.util.Collections.emptyList());
 		return m;
@@ -347,7 +377,7 @@ public class BoardControllerImpl {
 					return (T) v.toString();
 			} catch (NoSuchMethodException ignore) {
 			} catch (Exception e) {
-				// 로깅 원하면 추가
+				// 필요 시 로깅
 			}
 		}
 		return defVal;
@@ -364,7 +394,6 @@ public class BoardControllerImpl {
 		return null;
 	}
 
-	/** Map으로 기사 내려온 경우, JSP 필수 키 최소 보장 */
 	private static void ensureKeys(Map<String, Object> m) {
 		m.putIfAbsent("id", 0);
 		m.putIfAbsent("title", "게시글");
@@ -381,16 +410,13 @@ public class BoardControllerImpl {
 	 * ============================== 글 수정 (GET/POST 호환)
 	 * ==============================
 	 */
-	// 수정 폼 열기 (GET)
 	@RequestMapping(value = "/modArticleForm.do", method = RequestMethod.GET)
 	public ModelAndView modArticleForm(HttpServletRequest request) throws Exception {
 		String sNo = request.getParameter("articleNO");
-		if (sNo == null || sNo.trim().isEmpty()) {
+		if (sNo == null || sNo.trim().isEmpty())
 			return new ModelAndView("redirect:/board/listArticles.do");
-		}
 		int articleNO = Integer.parseInt(sNo);
 
-		// 기존 글 불러오기 (ArticleVO 또는 Map 반환 지원)
 		Object data = boardService.viewArticle(articleNO);
 
 		ModelAndView mav = new ModelAndView("board/modArticleForm"); // 수정 전용 JSP
@@ -402,24 +428,19 @@ public class BoardControllerImpl {
 			mav.addAllObjects(m);
 		}
 		mav.addObject("mode", "edit");
-		// 폼 action을 명확히 지정(기본이 addNewArticle로 가는 문제 방지)
-		mav.addObject("formAction", request.getContextPath() + "/board/modArticle.do");
+		mav.addObject("formAction", request.getContextPath() + "/board/modArticle.do"); // ★ 글쓰기 폼과 action 구분
 		return mav;
 	}
 
-	// 수정 저장 (POST)
 	@RequestMapping(value = "/modArticle.do", method = RequestMethod.POST)
 	public ModelAndView modArticle(MultipartHttpServletRequest req) throws Exception {
 		req.setCharacterEncoding("utf-8");
 
-		// 글번호 필수
 		String sNo = req.getParameter("articleNO");
-		if (sNo == null || sNo.trim().isEmpty()) {
+		if (sNo == null || sNo.trim().isEmpty())
 			return new ModelAndView("redirect:/board/listArticles.do");
-		}
 		int articleNO = Integer.parseInt(sNo);
 
-		// 파라미터 수집
 		Map<String, Object> map = new HashMap<String, Object>();
 		for (Enumeration<?> e = req.getParameterNames(); e.hasMoreElements();) {
 			String name = (String) e.nextElement();
@@ -427,36 +448,24 @@ public class BoardControllerImpl {
 		}
 		map.put("articleNO", articleNO);
 
-		// 로그인 아이디 들어가야 권한 체크/갱신 되는 매퍼라면 주입
 		String loginId = resolveLoginId(req);
-		if (loginId != null && loginId.trim().length() > 0) {
+		if (!isBlank(loginId))
 			map.put("id", loginId);
-		}
 
-		// 새 파일이 올라온 경우에만 교체
-		MultipartFile imageFile = pickFirstFile(req); // imageFile / imageFileName 둘 다 대응
+		MultipartFile imageFile = pickFirstFile(req);
 		String newImage = saveToTempAndReturnFileName(imageFile);
-		if (newImage != null && newImage.trim().length() > 0) {
-			map.put("imageFileName", newImage); // mapper에서 <if test="imageFileName != null and imageFileName != ''"> 로
-												// 처리
-		}
+		if (!isBlank(newImage))
+			map.put("imageFileName", newImage); // 매퍼에서 null/empty 체크로 반영
 
-		// DB 업데이트
 		boardService.modArticle(map);
 
-		// 파일 이동(새 파일이 있는 경우만)
-		if (newImage != null && newImage.trim().length() > 0) {
+		if (!isBlank(newImage))
 			moveImageFromTemp(articleNO, newImage);
-		}
 
-		// 수정 후 해당 글 보기로 이동
 		return new ModelAndView("redirect:/board/viewArticle.do?articleNO=" + articleNO);
 	}
 
-	/*
-	 * ============================== 글 삭제 (GET/POST 호환)
-	 * ==============================
-	 */
+	/* ============================== 글 삭제 ============================== */
 	@RequestMapping(value = { "/removeArticle.do", "/deleteArticle.do", "/article/removeArticle.do" }, method = {
 			RequestMethod.GET, RequestMethod.POST })
 	public ModelAndView removeArticle(HttpServletRequest request) throws Exception {
@@ -485,10 +494,7 @@ public class BoardControllerImpl {
 		return new ModelAndView("redirect:/board/listArticles.do");
 	}
 
-	/*
-	 * ============================== 이미지 출력 (공용 엔드포인트) <img
-	 * src="${ctx}/board/img/${no}/${file}"> ==============================
-	 */
+	/* ============================== 이미지 출력(공용) ============================== */
 	@RequestMapping(value = "/img/{articleNO}/{fileName:.+}", method = RequestMethod.GET)
 	public void serveImage(@PathVariable("articleNO") int articleNO, @PathVariable("fileName") String fileName,
 			HttpServletResponse response) throws Exception {
@@ -525,7 +531,7 @@ public class BoardControllerImpl {
 	}
 
 	/*
-	 * ============================== (구버전 호환) download.do 방식도 유지
+	 * ============================== (구버전 호환) download.do
 	 * ==============================
 	 */
 	@RequestMapping(value = "/download.do", method = RequestMethod.GET)
@@ -539,35 +545,32 @@ public class BoardControllerImpl {
 		serveImage(Integer.parseInt(sNo), fileName, response);
 	}
 
-	/** 댓글 등록 */
+	/* ============================== 댓글 ============================== */
 	@RequestMapping(value = "/addComment.do", method = RequestMethod.POST)
 	public String addComment(@RequestParam("articleNO") int articleNO, @RequestParam("content") String content,
 			@RequestParam(value = "parentId", required = false) Long parentId,
 			@RequestParam(value = "photos", required = false) java.util.List<MultipartFile> photos,
 			javax.servlet.http.HttpSession session) {
-		// 로그인 사용자 아이디/닉네임 꺼내는 부분은 프로젝트에 맞춰 조정
+
 		String writer = null;
 		Object m = session.getAttribute("member");
 		if (m != null) {
 			try {
-				// 예: MemberVO에 getId() 또는 getName() 등이 있다면 거기 맞춰 사용
 				writer = (String) m.getClass().getMethod("getId").invoke(m);
 			} catch (Exception ignore) {
 			}
 		}
 
 		com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
-		dto.setArticleNo(articleNO); // ★ 필드명 주의: setArticleNo
+		dto.setArticleNo(articleNO);
 		dto.setContent(content);
 		dto.setParentId(parentId);
 		dto.setWriter(writer);
 
-		commentService.addComment(dto); // 파일 저장/첨부는 나중에 확장
-
+		commentService.addComment(dto); // 파일첨부 확장은 추후
 		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
 	}
 
-	/** (선택) 대댓글도 같은 메서드를 써도 되지만 따로 두고 싶다면 */
 	@RequestMapping(value = "/replyComment.do", method = RequestMethod.POST)
 	public String replyComment(@RequestParam("articleNO") int articleNO, @RequestParam("content") String content,
 			@RequestParam("parentId") Long parentId) {
@@ -579,10 +582,151 @@ public class BoardControllerImpl {
 		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
 	}
 
-	/** (선택) 댓글 삭제 */
-	@RequestMapping(value = "/deleteComment.do", method = RequestMethod.POST)
-	public String deleteComment(@RequestParam("id") Long id, @RequestParam("articleNO") int articleNO) {
-		commentService.deleteComment(id); // 구현돼있어야 함
-		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
+	/*
+	 * ============================== (추가) 임시저장 + 임시파일 이동 유틸
+	 * ==============================
+	 */
+
+	/** 임시 디렉토리 결정: 외부(System property) 우선, 없으면 톰캣 내부(/board/img/temp) */
+	private Path resolveTempDir(HttpServletRequest req) throws IOException {
+		Path p = Paths.get(req.getServletContext().getRealPath("/board/img/temp"));
+		Files.createDirectories(p);
+		return p;
+	}
+
+	/**
+	 * 임시저장: 제목/본문/태그/카테고리 + 이미지(옵션) - JSP의 <input type="file" name="imageFile"> 와
+	 * name 일치 - 응답: { ok: true, imageFileName: "xxxx.jpg" }
+	 */
+	@RequestMapping(value = "/saveDraft.do", method = RequestMethod.POST)
+	@ResponseBody
+	public Map<String, Object> saveDraft(HttpServletRequest req,
+			@RequestParam(value = "title", required = false) String title,
+			@RequestParam(value = "cat", required = false) String cat,
+			@RequestParam(value = "sub", required = false) String sub,
+			@RequestParam(value = "content", required = false) String content,
+			@RequestParam(value = "tags", required = false) String tags,
+			@RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
+		Map<String, Object> res = new HashMap<>();
+		res.put("ok", false);
+
+		try {
+			// 1) 어떤 이름으로 왔는지 전부 수집(진단)
+			List<Map<String, Object>> parts = new ArrayList<>();
+			if (req instanceof MultipartHttpServletRequest) {
+				MultipartHttpServletRequest mreq = (MultipartHttpServletRequest) req;
+				for (Map.Entry<String, MultipartFile> e : mreq.getFileMap().entrySet()) {
+					MultipartFile mf = e.getValue();
+					Map<String, Object> p = new HashMap<>();
+					p.put("field", e.getKey());
+					p.put("origName", mf != null ? mf.getOriginalFilename() : null);
+					p.put("size", (mf != null && !mf.isEmpty()) ? mf.getSize() : 0);
+					parts.add(p);
+				}
+			}
+			res.put("parts", parts);
+
+			// 2) 기본 imageFile이 비었으면 첫 번째 파일로 대체(이름 불일치 방지)
+			if ((imageFile == null || imageFile.isEmpty()) && req instanceof MultipartHttpServletRequest) {
+				MultipartHttpServletRequest mreq = (MultipartHttpServletRequest) req;
+				for (MultipartFile mf : mreq.getFileMap().values()) {
+					if (mf != null && !mf.isEmpty()) {
+						imageFile = mf;
+						break;
+					}
+				}
+			}
+
+			String imageFileName = null;
+
+			// 3) 파일이 실제로 들어왔는지 검사 + 저장
+			if (imageFile != null && !imageFile.isEmpty()) {
+				String orig = imageFile.getOriginalFilename();
+				String ext = "";
+				if (orig != null) {
+					int dot = orig.lastIndexOf('.');
+					if (dot >= 0)
+						ext = orig.substring(dot);
+				}
+				String saveName = System.currentTimeMillis() + "-" + Math.abs((orig + UUID.randomUUID()).hashCode())
+						+ ext;
+
+				Path tempDir = resolveTempDir(req); // ★ 임시 저장 경로(네 프로젝트의 현재 정책 그대로 사용)
+				Files.createDirectories(tempDir);
+				Path dst = tempDir.resolve(saveName);
+				imageFile.transferTo(dst.toFile()); // 저장
+
+				imageFileName = saveName;
+				res.put("saved", dst.toString());
+			} else {
+				res.put("reason", "no_file_in_request"); // ★ 파일이 아예 안 왔을 때
+			}
+
+			// 4) 세션 임시본 업데이트(제목/본문/이미지)
+			HttpSession session = req.getSession();
+			@SuppressWarnings("unchecked")
+			Map<String, Object> draft = (Map<String, Object>) session.getAttribute("draftArticle");
+			if (draft == null)
+				draft = new HashMap<>();
+			if (title != null)
+				draft.put("title", title);
+			if (cat != null)
+				draft.put("cat", cat);
+			if (sub != null)
+				draft.put("sub", sub);
+			if (content != null)
+				draft.put("content", content);
+			if (tags != null)
+				draft.put("tags", tags);
+			if (imageFileName != null)
+				draft.put("imageFileName", imageFileName);
+			session.setAttribute("draftArticle", draft);
+
+			res.put("imageFileName", imageFileName);
+			res.put("ok", true);
+			return res;
+		} catch (Exception ex) {
+			res.put("error", ex.getClass().getSimpleName() + ": " + ex.getMessage());
+			return res;
+		}
+	}
+
+	@RequestMapping(value = "/img/temp/{fileName:.+}", method = RequestMethod.GET)
+	public void serveTemp(@PathVariable String fileName, HttpServletRequest req, HttpServletResponse resp)
+			throws Exception {
+		File f = resolveTempDir(req).resolve(fileName).toFile(); // ★ 임시 저장 위치와 동일
+		if (!f.exists() || !f.isFile()) {
+			resp.setStatus(404);
+			return;
+		}
+		String mime = servletContext.getMimeType(f.getName());
+		if (mime == null || mime.trim().isEmpty())
+			mime = "application/octet-stream";
+		resp.setContentType(mime);
+		resp.setContentLengthLong(f.length());
+		try (FileInputStream in = new FileInputStream(f); OutputStream out = resp.getOutputStream()) {
+			byte[] buf = new byte[8192];
+			int len;
+			while ((len = in.read(buf)) != -1)
+				out.write(buf, 0, len);
+		}
+	}
+
+	/** 최종 등록/수정 시: temp 이미지 → 본문 폴더로 이동 */
+	private void moveDraftImageIfExists(HttpServletRequest req, String draftImageFileName, long articleNO)
+			throws IOException {
+		if (draftImageFileName == null || draftImageFileName.isEmpty())
+			return;
+
+		Path tempDir = resolveTempDir(req); // 임시 저장소
+		Path src = tempDir.resolve(draftImageFileName);
+		if (!Files.exists(src))
+			return;
+
+		Path articleDir = Paths.get(getImageRepo(), String.valueOf(articleNO)); // 최종 저장소
+		Files.createDirectories(articleDir);
+
+		Path dst = articleDir.resolve(draftImageFileName);
+		Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
 	}
 }

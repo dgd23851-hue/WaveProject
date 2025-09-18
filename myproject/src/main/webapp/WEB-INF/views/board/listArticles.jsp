@@ -41,20 +41,6 @@
 				<c:if test="${not empty curSub}"> · ${curSub}</c:if>
 			</h1>
 
-			<form class="cl-controls" method="get"
-				action="<c:url value='/board/listArticles.do'/>">
-				<input type="hidden" name="cat" value="${curCat}" /> <input
-					type="hidden" name="sub" value="${curSub}" /> <input
-					class="cl-search" type="search" name="q" value="${fn:escapeXml(q)}"
-					placeholder="검색" /> <select class="cl-sort" name="sort">
-					<c:set var="sort" value="${param.sort}" />
-					<option value="latest"
-						${sort=='latest'  || empty sort ? 'selected' : ''}>최신순</option>
-					<option value="popular" ${sort=='popular' ? 'selected' : ''}>인기순</option>
-					<option value="comment" ${sort=='comment' ? 'selected' : ''}>댓글순</option>
-				</select>
-				<button class="cl-btn" type="submit">적용</button>
-
 				<%-- 글쓰기 버튼 (현재 cat/sub 유지) --%>
 				<c:url var="writeUrl" value="/board/articleForm.do">
 					<c:if test="${not empty curCat}">

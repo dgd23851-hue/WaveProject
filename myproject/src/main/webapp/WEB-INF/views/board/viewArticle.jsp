@@ -402,6 +402,19 @@ request.setAttribute("loginId", loginId);
 	cursor: pointer
 }
 </style>
+
+<!-- wa2-fix-content-top-margin -->
+<style>
+/* Remove accidental top gap caused by first child margins */
+.content>*:first-child {
+	margin-top: 0 !important;
+}
+/* Also prevent double collapse when content starts with headings or paragraphs */
+.content {
+	margin-top: 0;
+}
+</style>
+
 </head>
 <body>
 	<div class="container">
@@ -451,8 +464,34 @@ request.setAttribute("loginId", loginId);
 		</c:if>
 
 		<div class="content">
-			<c:out value="${article.content}" escapeXml="false" />
+			<c:out value="${fn:trim(article.content)}" escapeXml="false" />
 		</div>
+		<!-- wa2-strip-leading-empty-html -->
+		<script>
+			(function() {
+				var box = document.querySelector('.content');
+				if (!box)
+					return;
+				var html = box.innerHTML || '';
+
+				// Remove BOM at start
+				html = html.replace(/^\uFEFF+/, '');
+
+				// Iteratively strip leading empty HTML: whitespace, &nbsp;, <br>, or empty <p>/<div>/<span>… blocks
+				var re = /^(?:\s|&nbsp;|\u00A0|\u3000|<!--([\s\S]*?)-->|<br\s*\/?>|<(?:p|div|section|article|span)[^>]*>(?:\s|&nbsp;|\u00A0|\u3000|<br\s*\/?>|<!--([\s\S]*?)-->|&nbsp;)*<\/(?:p|div|section|article|span)>)+/i;
+				var prev;
+				do {
+					prev = html;
+					html = html.replace(re, '');
+				} while (html !== prev);
+
+				// If still starts with &nbsp; or spaces, strip them
+				html = html.replace(/^(?:\s|&nbsp;|\u00A0|\u3000)+/i, '');
+
+				box.innerHTML = html;
+			})();
+		</script>
+
 
 		<div class="actions">
 			<c:if test="${loginId == article.id || loginId == 'admin'}">

@@ -44,7 +44,7 @@
 			<ul class="foot-list">
 				<li><a href="mailto:admin@wave.com">admin@wave.com</a></li>
 				<li><span>02-000-0000</span></li>
-				<li><span>서울시 OO구 OO로 00</span></li>
+				<li><span>대전광역시</span></li>
 			</ul>
 
 			<div class="social">

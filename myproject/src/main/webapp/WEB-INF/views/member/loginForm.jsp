@@ -1,84 +1,94 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="false"%>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"
+	isELIgnored="false"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>로그인 | WAVE 뉴스</title>
+<meta charset="UTF-8" />
+<title>로그인 | WAVE 뉴스</title>
 
-  <!-- 로그인 실패 경고 -->
-  <c:if test="${error eq 'loginFailed' or param.error eq 'loginFailed' or param.result eq 'loginFailed'}">
-    <script>
+<!-- 로그인 실패 경고 -->
+<c:if
+	test="${error eq 'loginFailed' or param.error eq 'loginFailed' or param.result eq 'loginFailed'}">
+	<script>
       document.addEventListener('DOMContentLoaded', function(){ alert('아이디 또는 비밀번호가 올바르지 않습니다.'); });
     </script>
-  </c:if>
+</c:if>
 
-  <!-- 회원가입 에러(아이디 중복) → 가입 탭 열기 + 경고 -->
-  <c:if test="${signupError eq 'idExists' or param.signupError eq 'idExists'}">
-    <script>
+<!-- 회원가입 에러(아이디 중복) → 가입 탭 열기 + 경고 -->
+<c:if
+	test="${signupError eq 'idExists' or param.signupError eq 'idExists'}">
+	<script>
       document.addEventListener('DOMContentLoaded', function(){
         // 탭 전환은 아래 스크립트에서 처리 (signupTab 클릭)
         alert('이미 사용 중인 아이디입니다.');
       });
     </script>
-  </c:if>
+</c:if>
 
-  <link rel="stylesheet" href="<c:url value='/resources/css/login.css'/>" />
-  <link rel="stylesheet" href="<c:url value='/resources/css/style.css'/>">
-  <style>
-    .hint-ok{ color:#1e873e; font-size:12px; margin-top:4px; }
-    .hint-bad{ color:#c62828; font-size:12px; margin-top:4px; }
-    .disabled { opacity:.6; pointer-events:none; }
-  </style>
+<link rel="stylesheet" href="<c:url value='/resources/css/login.css'/>" />
+<link rel="stylesheet" href="<c:url value='/resources/css/style.css'/>">
+<style>
+.hint-ok {
+	color: #1e873e;
+	font-size: 12px;
+	margin-top: 4px;
+}
+
+.hint-bad {
+	color: #c62828;
+	font-size: 12px;
+	margin-top: 4px;
+}
+
+.disabled {
+	opacity: .6;
+	pointer-events: none;
+}
+</style>
 </head>
 
 <body>
-  <div class="login-bg">
-    <div class="login-container">
-      <div class="login-tabs">
-        <button class="tab-btn active" id="loginTab" type="button">로그인</button>
-        <button class="tab-btn" id="signupTab" type="button">회원가입</button>
-      </div>
+	<div class="login-bg">
+		<div class="login-container">
+			<div class="login-tabs">
+				<button class="tab-btn active" id="loginTab" type="button">로그인</button>
+				<button class="tab-btn" id="signupTab" type="button">회원가입</button>
+			</div>
 
-      <!-- 로그인 -->
-      <form class="login-form" id="loginForm" method="post" action="<c:url value='/member/login.do'/>">
-        <label for="login-id">아이디</label>
-        <input type="text" id="login-id" name="id" required />
+			<!-- 로그인 -->
+			<form class="login-form" id="loginForm" method="post"
+				action="<c:url value='/member/login.do'/>">
+				<label for="login-id">아이디</label> <input type="text" id="login-id"
+					name="id" required /> <label for="login-pw">비밀번호</label> <input
+					type="password" id="login-pw" name="pwd" required />
 
-        <label for="login-pw">비밀번호</label>
-        <input type="password" id="login-pw" name="pwd" required />
+				<button type="submit" class="login-action-btn">로그인</button>
+			</form>
 
-        <button type="submit" class="login-action-btn">로그인</button>
-      </form>
+			<!-- 회원가입 -->
+			<form class="signup-form" id="signupForm" method="post"
+				style="display: none" action="<c:url value='/member/addMember.do'/>"
+				onsubmit="return validateSignup();">
 
-      <!-- 회원가입 -->
-      <form class="signup-form" id="signupForm" method="post" style="display:none"
-            action="<c:url value='/member/addMember.do'/>"
-            onsubmit="return validateSignup();">
+				<label for="signup-id">아이디</label> <input type="text" id="signup-id"
+					name="id" required value="${signupId != null ? signupId : ''}"
+					autocomplete="off" />
+				<div id="idCheckMsg" aria-live="polite"></div>
 
-        <label for="signup-id">아이디</label>
-        <input type="text" id="signup-id" name="id" required
-               value="${signupId != null ? signupId : ''}" autocomplete="off" />
-        <div id="idCheckMsg" aria-live="polite"></div>
+				<label for="signup-pw">비밀번호</label> <input type="password"
+					id="signup-pw" name="pwd" required /> <label for="signup-pw2">비밀번호
+					확인</label> <input type="password" id="signup-pw2" required /> <label
+					for="signup-name">이름</label> <input type="text" id="signup-name"
+					name="name" required /> <label for="signup-email">이메일</label> <input
+					type="email" id="signup-email" name="email" required />
 
-        <label for="signup-pw">비밀번호</label>
-        <input type="password" id="signup-pw" name="pwd" required />
+				<button id="signupSubmit" type="submit" class="login-action-btn">회원가입</button>
+			</form>
+		</div>
+	</div>
 
-        <label for="signup-pw2">비밀번호 확인</label>
-        <input type="password" id="signup-pw2" required />
-
-        <label for="signup-name">이름</label>
-        <input type="text" id="signup-name" name="name" required />
-
-        <label for="signup-email">이메일</label>
-        <input type="email" id="signup-email" name="email" required />
-
-        <button id="signupSubmit" type="submit" class="login-action-btn">회원가입</button>
-      </form>
-    </div>
-  </div>
-
-  <script>
+	<script>
     // 탭 전환
     const loginTab = document.getElementById('loginTab');
     const signupTab = document.getElementById('signupTab');
@@ -100,6 +110,18 @@
 
     loginTab.onclick = openLogin;
     signupTab.onclick = openSignup;
+    
+    // URL로 탭 선택: ?tab=signup 또는 #signup 이면 회원가입 탭 오픈
+    (function () {
+      try {
+        var hs = (location.hash || '').toLowerCase();
+        if (hs === '#signup' || hs === '#join') { openSignup(); return; }
+
+        var p  = new URLSearchParams(location.search);
+        var t  = ((p.get('tab') || p.get('t') || '').toLowerCase());
+        if (t === 'signup' || t === 'join' || t === 'register') { openSignup(); }
+      } catch (e) { /* no-op */ }
+    })();
 
     // 서버가 signupError를 보냈다면 가입 탭부터 열기
     (function(){

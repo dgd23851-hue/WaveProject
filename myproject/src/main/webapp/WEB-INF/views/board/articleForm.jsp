@@ -25,14 +25,25 @@
 
 		<!-- action을 addNewArticle.do(POST)로 변경 -->
 		<form id="wa2-form" class="wa2-form" method="post"
+			action="${pageContext.request.contextPath}/board/addNewArticle.do"
+			data-save-draft-url="${pageContext.request.contextPath}/board/saveDraft.do"
+			data-temp-img-prefix="${pageContext.request.contextPath}/board/img/temp/"
 			action="<c:url value='/board/addNewArticle.do'/>"
 			enctype="multipart/form-data">
+
+
 			<c:if test="${_csrf != null}">
 				<input type="hidden" name="${_csrf.parameterName}"
 					value="${_csrf.token}" />
 			</c:if>
 			<input type="hidden" name="returnUrl"
 				value="<c:url value='/board/listArticles.do'/>" />
+
+
+			<%-- ★ 임시저장 이미지 파일명 전달 (컨트롤러가 temp -> 본문폴더로 이동할 때 사용) --%>
+			<input type="hidden" id="draftImageFileName"
+				name="draftImageFileName"
+				value="${draft.imageFileName != null ? draft.imageFileName : ''}" />
 
 			<!-- Title -->
 			<div class="wa2-field">
@@ -72,6 +83,23 @@
 				<div class="wa2-uploader" id="uploader" aria-label="이미지 업로드">
 					<!-- name을 imageFile로 변경 -->
 					<input id="image" name="imageFile" type="file" accept="image/*" />
+					<c:set var="draftName"
+						value="${not empty draft.imageFileName
+               ? draft.imageFileName
+               : (not empty sessionScope.draftArticle.imageFileName
+                  ? sessionScope.draftArticle.imageFileName
+                  : (not empty draftImageFileName ? draftImageFileName : ''))}" />
+					<c:set var="draftName"
+						value="${not empty draft.imageFileName
+               ? draft.imageFileName
+               : (not empty sessionScope.draftArticle.imageFileName
+                  ? sessionScope.draftArticle.imageFileName
+                  : (not empty draftImageFileName ? draftImageFileName : ''))}" />
+					<c:if test="${not empty draftName}">
+						<img alt="임시 이미지 미리보기"
+							src="<c:url value='/board/img/temp/${fn:escapeXml(draftName)}'/>" />
+					</c:if>
+
 					<div class="wa2-drop" id="dropzone">
 						<div class="wa2-drop__header">
 							<button type="button" class="wa2-choose" id="btnChoose">이미지
@@ -133,6 +161,25 @@
 	</div>
 
 	<div class="wa2-toast" id="toast" aria-live="polite"></div>
-</div>
 
-<script defer src="<c:url value='/resources/js/articleForm.js'/>?v=1"></script>
+	<!-- wa2-fix-leading-space -->
+	<script>
+		(function() {
+			var form = document.getElementById('wa2-form');
+			var ta = document.getElementById('content');
+			if (!form || !ta)
+				return;
+			form.addEventListener('submit', function() {
+				// Trim ONLY leading whitespace at the very start of the content
+				// (spaces, tabs, NBSP, ideographic space, BOM)
+				var v = ta.value || '';
+				// Remove BOM and zero-width chars at start
+				v = v.replace(/^\uFEFF+/, '');
+				// Remove leading spaces/tabs and common wide spaces
+				v = v.replace(/^[\ \t\u00A0\u3000]+/, '');
+				ta.value = v;
+			});
+		})();
+	</script>
+
+	<script defer src="<c:url value='/resources/js/articleForm.js'/>?v=1"></script>
