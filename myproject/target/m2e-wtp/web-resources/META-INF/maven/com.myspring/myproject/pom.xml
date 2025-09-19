@@ -209,6 +209,18 @@
 			<version>4.7</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- JSON 직렬화 (Spring 3.1.x ↔ Jackson 1.x) -->
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-core-asl</artifactId>
+			<version>1.9.13</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+			<version>1.9.13</version>
+		</dependency>
 	</dependencies>
 
 	<build>

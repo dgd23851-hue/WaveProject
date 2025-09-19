@@ -48,13 +48,6 @@
 					News</span>
 			</a>
 
-			<form class="nh-search" role="search" method="get"
-				action="<c:url value='/board/listArticles.do'/>">
-				<label class="sr-only" for="q">검색</label> <input id="q" name="q"
-					type="search" placeholder="검색어를 입력하세요" value="${param.q}" />
-				<button type="submit" class="nh-btn">검색</button>
-			</form>
-
 			<button id="nh-burger" class="nh-burger" aria-expanded="false"
 				aria-controls="nh-primary">
 				<span class="sr-only">메뉴 열기</span> <span class="nh-burger__bar"

@@ -23,6 +23,7 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -728,5 +729,66 @@ public class BoardControllerImpl {
 
 		Path dst = articleDir.resolve(draftImageFileName);
 		Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	/** 리스트 화면(JSP) — 페이지용 */
+	@RequestMapping(value = "/listArticlesPage.do", method = RequestMethod.GET)
+	public String listArticlesPage() {
+		// /WEB-INF/views/board/listArticlesJsonView.jsp
+		return "board/listArticlesJsonView";
+	}
+
+	/** 리스트 데이터(JSON) — AJAX용 */
+	@RequestMapping(value = "/listArticlesJson.do", method = RequestMethod.GET)
+	@ResponseBody
+	// CORS가 필요할 때만 아래 주석 해제해서 사용(다른 출처에서 호출한다면)
+	// @CrossOrigin(
+	// origins = {"http://localhost:8080","https://gusdnd2346.cafe24.com"},
+	// allowCredentials = "true"
+	// )
+	public List<ArticleVO> listArticlesJson(@RequestParam Map<String, String> params) {
+		Map<String, Object> cond = new HashMap<String, Object>();
+		putIfNotBlank(cond, "cat", params.get("cat"));
+		putIfNotBlank(cond, "sub", params.get("sub"));
+		putIfNotBlank(cond, "q", params.get("q"));
+
+		int page = toInt(params.get("page"), 1);
+		int size = toInt(params.get("size"), 20);
+		cond.put("offset", (page - 1) * size);
+		cond.put("limit", size);
+
+		return boardService.listArticles(cond); // ← 서비스 시그니처에 맞춤
+	}
+
+	/** 서버사이드 렌더링이 필요할 때 쓰는 선택 메서드(필요 없으면 삭제) */
+	@RequestMapping(value = "/listArticlesView.do", method = RequestMethod.GET)
+	public String listArticlesView(@RequestParam Map<String, String> params, Model model) {
+		Map<String, Object> cond = new HashMap<String, Object>();
+		putIfNotBlank(cond, "cat", params.get("cat"));
+		putIfNotBlank(cond, "sub", params.get("sub"));
+		putIfNotBlank(cond, "q", params.get("q"));
+
+		int page = toInt(params.get("page"), 1);
+		int size = toInt(params.get("size"), 20);
+		cond.put("offset", (page - 1) * size);
+		cond.put("limit", size);
+
+		model.addAttribute("articles", boardService.listArticles(cond));
+		return "board/listArticles"; // 필요 시 실제 JSP 이름으로 변경
+	}
+
+	// ===== helpers =====
+	private static int toInt(String s, int def) {
+		try {
+			return (s == null || s.trim().isEmpty()) ? def : Integer.parseInt(s.trim());
+		} catch (NumberFormatException e) {
+			return def;
+		}
+	}
+
+	private static void putIfPresent(Map<String, Object> m, String k, Object v) {
+		if (v != null) {
+			m.put(k, v);
+		}
 	}
 }

@@ -55,6 +55,6 @@
 	<definition name="board/viewArticle" extends="layout">
 		<put-attribute name="title" value="게시글 보기" />
 		<put-attribute name="body"
-			value="/WEB-INF/views/board/viewArticle.jsp" />
+			value="/WEB-INF/views/board/viewArticle.body.jsp" />
 	</definition>
 </tiles-definitions>
