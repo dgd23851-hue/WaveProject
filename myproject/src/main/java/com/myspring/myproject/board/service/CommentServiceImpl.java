@@ -3,6 +3,7 @@ package com.myspring.myproject.board.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +17,6 @@ public class CommentServiceImpl implements CommentService {
 	@Autowired
 	private CommentMapper commentMapper;
 
-	// 기본 생성자 (스프링이 사용)
 	public CommentServiceImpl() {
 	}
 
@@ -26,8 +26,9 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
-	public void addComment(CommentDTO dto) {
-		commentMapper.insert(dto);
+	public void addComment(CommentDTO dto) throws DataAccessException {
+		int n = commentMapper.insert(dto);
+		System.out.println("[COMMENT/SERVICE] insert affected=" + n + ", newId=" + dto.getId());
 	}
 
 	@Override
@@ -40,12 +41,22 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
-	public void deleteById(Long id) {
+	public void deleteById(Long id) throws DataAccessException {
 		commentMapper.deleteById(id);
 	}
 
 	@Override
-	public void deleteByArticle(Long articleId) {
-		commentMapper.deleteByArticle(articleId);
+	public void deleteByArticle(Long articleId) throws DataAccessException {
+		// 방어적으로 구현
+		if (articleId != null) {
+			List<CommentDTO> existing = commentMapper.listByArticle(articleId);
+			if (existing != null && !existing.isEmpty()) {
+				for (CommentDTO c : existing) {
+					if (c.getId() != null) {
+						commentMapper.deleteById(c.getId());
+					}
+				}
+			}
+		}
 	}
 }

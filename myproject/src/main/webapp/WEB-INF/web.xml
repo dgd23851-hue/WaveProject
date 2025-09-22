@@ -9,29 +9,25 @@
 	<!-- Root context: 서비스/리포지토리/마이바티스 -->
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
-		<param-value>/WEB-INF/spring/action-mybatis.xml
-/WEB-INF/spring/root-context.xml</param-value>
-	</context-param>
-	<!-- 이미지 저장소 절대경로 (운영/개발 환경에 맞춰 1개만 활성화) -->
-	<context-param>
-		<param-name>articleImageRepo</param-name>
-		<!-- 카페24 -->
-		<param-value>/home/hosting_users/gusdnd2346/www/board/article_image</param-value>
-		<!-- 로컬 윈도우(예) -->
-		<!-- <param-value>C:\board\article_image</param-value> -->
+		<param-value>
+      /WEB-INF/spring/action-mybatis.xml
+      /WEB-INF/spring/root-context.xml
+    </param-value>
 	</context-param>
 
-	<!-- 업로드 베이스 디렉터리 -->
+	<!-- 업로드 베이스 디렉터리 (중복 제거) -->
 	<context-param>
 		<param-name>articleImageRepo</param-name>
+		<!-- 운영 경로 -->
 		<param-value>/home/hosting_users/gusdnd2346/www/board/article_image</param-value>
+		<!-- 로컬(예시) <param-value>C:\board\article_image</param-value> -->
 	</context-param>
 
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
 
-	<!-- UTF-8: 단일 선언 -->
+	<!-- UTF-8 필터 -->
 	<filter>
 		<filter-name>encodingFilter</filter-name>
 		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
@@ -48,8 +44,15 @@
 		<filter-name>encodingFilter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
-
-	<!-- DispatcherServlet: 하나만 / 로 매핑 -->
+	<filter>
+		<filter-name>commentTrace</filter-name>
+		<filter-class>com.myspring.myproject.web.CommentTraceFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>commentTrace</filter-name>
+		<url-pattern>/comment/*</url-pattern>
+	</filter-mapping>
+	<!-- DispatcherServlet: *.do 로만 매핑 (슬래시(/) 매핑 제거) -->
 	<servlet>
 		<servlet-name>appServlet</servlet-name>
 		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
@@ -62,7 +65,7 @@
 
 	<servlet-mapping>
 		<servlet-name>appServlet</servlet-name>
-		<url-pattern>/</url-pattern>
+		<url-pattern>*.do</url-pattern>
 	</servlet-mapping>
 
 	<welcome-file-list>

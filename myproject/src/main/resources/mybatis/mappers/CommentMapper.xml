@@ -15,8 +15,10 @@
 		<result property="updateDate" column="updateDate" />
 	</resultMap>
 
-	<select id="listByArticle" resultMap="CommentMap">
-		SELECT * FROM comments
+	<select id="listByArticle" resultMap="CommentMap"
+		parameterType="long">
+		SELECT id, articleId, parentId, writer, content, writeDate, updateDate
+		FROM comments
 		WHERE articleId = #{articleId}
 		ORDER BY writeDate ASC, id ASC
 	</select>

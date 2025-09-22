@@ -2,7 +2,6 @@
 <!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 2.0//EN"
         "http://tiles.apache.org/dtds/tiles-config_2_0.dtd">
 <tiles-definitions>
-
 	<!-- 부모 레이아웃: 이름을 'layout'으로 만들어 호환 확보 -->
 	<definition name="layout"
 		template="/WEB-INF/views/common/layout.jsp">
@@ -13,27 +12,13 @@
 			value="/WEB-INF/views/common/footer.jsp" />
 		<put-attribute name="body" value="" />
 	</definition>
-
 	<!-- 보드 화면: 'layout'을 상속 -->
-	<definition name="board/*" extends="layout">
-		<put-attribute name="title" value="게시판" />
-		<put-attribute name="body"
-			value="/WEB-INF/views/board/{1}.jsp" />
-	</definition>
-
 	<definition name="board/listArticles" extends="layout">
 		<put-attribute name="title" value="기사 목록" />
 		<!-- ★ 여기 경로가 실제 파일 위치와 일치해야 함 -->
 		<put-attribute name="body"
 			value="/WEB-INF/views/board/listArticles.jsp" />
 	</definition>
-
-	<definition name="board/viewArticle" extends="layout">
-		<put-attribute name="title" value="기사 보기" />
-		<put-attribute name="body"
-			value="/WEB-INF/views/board/viewArticle.jsp" />
-	</definition>
-
 	<definition name="board/articleForm" extends="layout">
 		<put-attribute name="title" value="글쓰기" />
 		<put-attribute name="body"
@@ -44,14 +29,15 @@
 		<put-attribute name="body"
 			value="/WEB-INF/views/board/modArticleForm.jsp" />
 	</definition>
-
 	<!-- 공통 레이아웃은 tiles_member.xml의 'layout'을 그대로 사용 -->
+	<!-- 게시글 보기 -->
+	<!-- Wildcard for board views -->
 	<definition name="board/*" extends="layout">
+		<put-attribute name="title" value="게시판" />
 		<put-attribute name="body"
 			value="/WEB-INF/views/board/{1}.jsp" />
 	</definition>
-
-	<!-- 게시글 보기 -->
+	<!-- Specific article view maps to actual file name -->
 	<definition name="board/viewArticle" extends="layout">
 		<put-attribute name="title" value="게시글 보기" />
 		<put-attribute name="body"
