@@ -36,7 +36,6 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.myspring.myproject.board.mapper.BoardMapper;
 import com.myspring.myproject.board.service.BoardService;
-import com.myspring.myproject.board.service.CommentService;
 import com.myspring.myproject.board.vo.ArticleVO;
 
 @Controller
@@ -49,8 +48,6 @@ public class BoardControllerImpl {
 	@Autowired
 	private ServletContext servletContext;
 	@Autowired
-	private CommentService commentService;
-
 	/* ---------- JDK 8 유틸 ---------- */
 	private static boolean isBlank(String s) {
 		return s == null || s.trim().isEmpty();
@@ -321,10 +318,6 @@ public class BoardControllerImpl {
 		} else {
 			mav.addObject("articleNO", articleNO);
 		}
-
-		mav.addObject("comments", boardService.listCommentsWithReplies(articleNO));
-		mav.addObject("actionCommentAdd", "comment/add.do");
-		mav.addObject("actionCommentReply", "comment/reply.do");
 		return mav;
 	}
 
@@ -544,43 +537,6 @@ public class BoardControllerImpl {
 			return;
 		}
 		serveImage(Integer.parseInt(sNo), fileName, response);
-	}
-
-	/* ============================== 댓글 ============================== */
-	@RequestMapping(value = "/addComment.do", method = RequestMethod.POST)
-	public String addComment(@RequestParam("articleNO") int articleNO, @RequestParam("content") String content,
-			@RequestParam(value = "parentId", required = false) Long parentId,
-			@RequestParam(value = "photos", required = false) java.util.List<MultipartFile> photos,
-			javax.servlet.http.HttpSession session) {
-
-		String writer = null;
-		Object m = session.getAttribute("member");
-		if (m != null) {
-			try {
-				writer = (String) m.getClass().getMethod("getId").invoke(m);
-			} catch (Exception ignore) {
-			}
-		}
-
-		com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
-		dto.setArticleNo(articleNO);
-		dto.setContent(content);
-		dto.setParentId(parentId);
-		dto.setWriter(writer);
-
-		commentService.addComment(dto); // 파일첨부 확장은 추후
-		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
-	}
-
-	@RequestMapping(value = "/replyComment.do", method = RequestMethod.POST)
-	public String replyComment(@RequestParam("articleNO") int articleNO, @RequestParam("content") String content,
-			@RequestParam("parentId") Long parentId) {
-		com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
-		dto.setArticleNo(articleNO);
-		dto.setContent(content);
-		dto.setParentId(parentId);
-		commentService.addComment(dto);
-		return "redirect:/board/viewArticle.do?articleNO=" + articleNO;
 	}
 
 	/*
