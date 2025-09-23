@@ -302,7 +302,6 @@ public class BoardControllerImpl {
 
 	/* ============================== 글 보기 ============================== */
 	@RequestMapping(value = { "/viewArticle.do", "/viewArticle" }, method = RequestMethod.GET)
-
 	public ModelAndView viewArticle(@RequestParam(value = "articleNO", required = false) Integer articleNO) {
 		if (articleNO == null)
 			return new ModelAndView("redirect:/board/listArticles.do");
@@ -310,22 +309,53 @@ public class BoardControllerImpl {
 		Object data = boardService.viewArticle(articleNO);
 		ModelAndView mav = new ModelAndView("board/viewArticle");
 
+		// 기본값은 요청 파라미터(레거시 호환), 이후 실제 PK를 찾으면 덮어씀
+		Long articleId = Long.valueOf(articleNO);
+
 		if (data instanceof ArticleVO) {
-			mav.addObject("article", (ArticleVO) data);
+			ArticleVO vo = (ArticleVO) data;
+			mav.addObject("article", vo);
+			try {
+				Object id = vo.getClass().getMethod("getId").invoke(vo); // 실제 PK가 있으면 사용
+				if (id != null)
+					articleId = Long.valueOf(String.valueOf(id));
+			} catch (Exception ignore) {
+			}
 		} else if (data instanceof Map) {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> map = (Map<String, Object>) data;
 			mav.addAllObjects(map);
-			if (!map.containsKey("article")) {
-				mav.addObject("articleNO", articleNO);
+			// map에 담긴 article/PK에서 실제 PK를 우선 찾음
+			if (map.containsKey("articleId") && map.get("articleId") != null) {
+				articleId = Long.valueOf(String.valueOf(map.get("articleId")));
+			} else if (map.containsKey("article") && map.get("article") != null) {
+				Object art = map.get("article");
+				try {
+					Object id = art.getClass().getMethod("getId").invoke(art);
+					if (id != null)
+						articleId = Long.valueOf(String.valueOf(id));
+				} catch (Exception ignore) {
+				}
+			} else {
+				mav.addObject("articleNO", articleNO); // 레거시 표시용
 			}
 		} else {
-			mav.addObject("articleNO", articleNO);
+			mav.addObject("articleNO", articleNO); // 레거시 표시용
 		}
 
-		mav.addObject("comments", commentService.listByArticle(Long.valueOf(articleNO)));
+		// ★ 댓글/폼에서 쓸 실제 PK를 반드시 내려줌
+		mav.addObject("articleId", articleId);
+
+		// 댓글도 같은 키로 조회
+		mav.addObject("comments", commentService.listByArticle(articleId));
+
+		// (선택) 액션 경로
 		mav.addObject("actionCommentAdd", "comment/add.do");
 		mav.addObject("actionCommentReply", "comment/reply.do");
+
+		// 디버그 로그 (원인 추적용)
+		System.out.println("[VIEW] articleNO=" + articleNO + ", resolved articleId=" + articleId);
+
 		return mav;
 	}
 

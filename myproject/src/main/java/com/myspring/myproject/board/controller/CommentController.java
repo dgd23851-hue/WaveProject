@@ -1,27 +1,14 @@
 package com.myspring.myproject.board.controller;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.myspring.myproject.board.dto.CommentDTO;
 import com.myspring.myproject.board.service.CommentService;
@@ -33,179 +20,88 @@ public class CommentController {
 	@Autowired
 	private CommentService commentService;
 
-	@Autowired
-	private DataSource dataSource;
-
 	public CommentController() {
 	}
 
-	// quick ping
-	@RequestMapping(value = { "/ping.do", "/ping" }, method = RequestMethod.GET)
-	@ResponseBody
-	public String ping() {
-		return "OK /comment";
-	}
-
+	// =========================
+	// 댓글 등록 (4번 방식 적용)
+	// =========================
 	@RequestMapping(value = { "/add.do", "/add" }, method = RequestMethod.POST)
 	public String add(@RequestParam(value = "articleId", required = false) String articleIdStr,
-			@RequestParam(value = "articleNO", required = false) String articleNOStr,
+			@RequestParam(value = "articleNO", required = false) String articleNOStr, // 화면 복귀용
 			@RequestParam(value = "content", required = false) String content,
 			@RequestParam(value = "parentId", required = false) String parentIdStr, HttpServletRequest request,
-			HttpSession session, ModelMap model) {
+			HttpSession session) {
 
+		// 0) 원문 디버그 (문제 재현시 추적에 유용)
+		System.out.println("[CC] RAW articleIdStr=" + articleIdStr + ", req.articleId="
+				+ request.getParameter("articleId") + ", content=" + content);
+
+		// 1) articleId는 오직 숫자로만 (비/비정상은 즉시 차단)
+		if (!isDigits(articleIdStr) && !isDigits(request.getParameter("articleId"))) {
+			System.out.println("[CC] FAIL: non-numeric articleId. raw=" + articleIdStr);
+			return "redirect:/board/listArticles.do?r=aid_null";
+		}
 		Long aid = toLong(articleIdStr);
 		if (aid == null)
-			aid = toLong(articleNOStr);
-		if (aid == null)
 			aid = toLong(request.getParameter("articleId"));
-		if (aid == null)
-			aid = toLong(request.getParameter("articleNO"));
 
-		System.out.println("[COMMENT/ADD] aId=" + aid + ", aNO=" + articleNOStr + ", contentLen="
-				+ (content == null ? 0 : content.length()));
+		// 상세화면 복귀용 파라미터
+		String articleNOForView = (StringUtils.hasText(articleNOStr)) ? articleNOStr
+				: (aid == null ? "" : String.valueOf(aid));
 
-		if (aid == null) {
-			System.out.println("[COMMENT/ADD] aid null → redirect list");
-			return "redirect:/board/listArticles.do";
+		// 2) 내용 비었으면 상세로 복귀
+		if (!StringUtils.hasText(content) || content.trim().isEmpty()) {
+			return "redirect:/board/viewArticle.do?articleNO=" + articleNOForView + "&r=empty";
 		}
-		if (!StringUtils.hasText(content)) {
-			System.out.println("[COMMENT/ADD] empty content → redirect view");
-			return "redirect:/board/viewArticle.do?articleNO=" + aid;
-		}
-		Long parentId = toLong(parentIdStr);
+
+		// 3) writer는 세션에서만 읽어서 writer 필드에만 (articleId에 섞이지 않게)
 		String writer = resolveLoginId(session);
 		if (!StringUtils.hasText(writer))
 			writer = "anonymous";
 
+		// 4) 실제로 서비스에 무엇을 보낼지 출력 (최종 방어선)
+		System.out.println("[CC] add(): articleId(Long)=" + aid + ", parentId=" + parentIdStr + ", writer=" + writer);
+
+		// 5) DTO 구성 (★ articleId에는 Long만!)
 		CommentDTO dto = new CommentDTO();
-		dto.setArticleId(aid);
-		dto.setParentId(parentId);
-		dto.setWriter(writer);
+		dto.setArticleId(aid); // Long
+		dto.setParentId(toLong(parentIdStr)); // Long 또는 null
+		dto.setWriter(writer); // 문자열은 writer에만
 		dto.setContent(content);
 
-		try {
-			commentService.addComment(dto);
-			System.out.println("[COMMENT/ADD] inserted newId=" + dto.getId());
-		} catch (DataAccessException e) {
-			System.err.println("[COMMENT/ADD][ERROR] " + e.getClass().getSimpleName() + " : " + e.getMessage());
-		}
+		// 6) 서비스 호출 (Service가 resolveArticleId(Long) → exists → insert 수행)
+		commentService.addComment(dto);
 
-		return "redirect:/board/viewArticle.do?articleNO=" + aid;
+		// 7) 성공 시 상세로 복귀
+		return "redirect:/board/viewArticle.do?articleNO=" + articleNOForView + "&r=ok&id=" + dto.getId();
 	}
 
+	// =========================
+	// 댓글 삭제 (참고용)
+	// =========================
 	@RequestMapping(value = { "/delete.do", "/delete" }, method = RequestMethod.POST)
 	public String delete(@RequestParam("id") String idStr,
 			@RequestParam(value = "articleId", required = false) String articleIdStr,
-			@RequestParam(value = "articleNO", required = false) String articleNOStr, HttpServletRequest request,
-			HttpSession session) {
+			@RequestParam(value = "articleNO", required = false) String articleNOStr, HttpServletRequest request) {
 
 		Long id = toLong(idStr);
 		Long aid = toLong(articleIdStr);
 		if (aid == null)
-			aid = toLong(articleNOStr);
-		if (aid == null)
 			aid = toLong(request.getParameter("articleId"));
-		if (aid == null)
-			aid = toLong(request.getParameter("articleNO"));
+
+		String articleNOForView = (StringUtils.hasText(articleNOStr)) ? articleNOStr
+				: (aid == null ? "" : String.valueOf(aid));
 
 		if (id != null) {
-			try {
-				commentService.deleteById(id);
-				System.out.println("[COMMENT/DEL] deleted id=" + id);
-			} catch (DataAccessException e) {
-				System.err.println("[COMMENT/DEL][ERROR] " + e.getClass().getSimpleName() + " : " + e.getMessage());
-			}
-		}
-		return "redirect:/board/viewArticle.do?articleNO=" + (aid == null ? "" : aid.toString());
-	}
-
-	// ===== Diagnostics
-	@RequestMapping(value = { "/diag.do", "/diag" }, method = RequestMethod.GET)
-	@ResponseBody
-	public Map<String, Object> diag(@RequestParam(value = "articleId", required = false) Long articleId) {
-		Map<String, Object> res = new HashMap<String, Object>();
-		res.put("ok", true);
-		Connection conn = null;
-		try {
-			res.put("dataSourceClass", dataSource.getClass().getName());
-			try {
-				res.put("url", (String) dataSource.getClass().getMethod("getUrl").invoke(dataSource));
-			} catch (Exception ignore) {
-			}
-			try {
-				res.put("jdbcUrl", (String) dataSource.getClass().getMethod("getJdbcUrl").invoke(dataSource));
-			} catch (Exception ignore) {
-			}
-
-			conn = dataSource.getConnection();
-			res.put("catalog", safe(conn.getCatalog()));
-			try (PreparedStatement ps = conn.prepareStatement("SELECT DATABASE()"); ResultSet rs = ps.executeQuery()) {
-				if (rs.next())
-					res.put("database()", safe(rs.getString(1)));
-			}
-			try (PreparedStatement ps = conn.prepareStatement("SHOW TABLES LIKE 'comments'");
-					ResultSet rs = ps.executeQuery()) {
-				res.put("has_comments_table", rs.next());
-			}
-			if (articleId != null) {
-				try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM comments WHERE articleId=?")) {
-					ps.setLong(1, articleId);
-					try (ResultSet rs = ps.executeQuery()) {
-						if (rs.next())
-							res.put("count_by_article", rs.getLong(1));
-					}
-				}
-			} else {
-				try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM comments");
-						ResultSet rs = ps.executeQuery()) {
-					if (rs.next())
-						res.put("count_total", rs.getLong(1));
-				}
-			}
-			List<Map<String, Object>> recent = new ArrayList<Map<String, Object>>();
-			try (PreparedStatement ps = conn.prepareStatement(
-					"SELECT id, articleId, writer, LEFT(content,60) AS snippet, writeDate FROM comments ORDER BY id DESC LIMIT 5");
-					ResultSet rs = ps.executeQuery()) {
-				while (rs.next()) {
-					Map<String, Object> row = new HashMap<String, Object>();
-					row.put("id", rs.getLong("id"));
-					row.put("articleId", rs.getLong("articleId"));
-					row.put("writer", safe(rs.getString("writer")));
-					row.put("snippet", safe(rs.getString("snippet")));
-					Timestamp ts = rs.getTimestamp("writeDate");
-					row.put("writeDate", ts == null ? null : ts.toString());
-					recent.add(row);
-				}
-			}
-			res.put("recent", recent);
-		} catch (Exception e) {
-			res.put("ok", false);
-			res.put("error", e.getClass().getSimpleName() + ": " + e.getMessage());
-		} finally {
-			try {
-				if (conn != null)
-					conn.close();
-			} catch (Exception ignore) {
-			}
-		}
-		return res;
-	}
-
-	private String safe(String s) {
-		return s == null ? null : s;
-	}
-
-	private String resolveLoginId(HttpSession session) {
-		Object m = session == null ? null : session.getAttribute("member");
-		if (m == null)
-			return null;
-		try {
-			return (String) m.getClass().getMethod("getId").invoke(m);
-		} catch (Exception ignore) {
-			return null;
+			commentService.deleteById(id);
+			return "redirect:/board/viewArticle.do?articleNO=" + articleNOForView + "&r=del_ok";
+		} else {
+			return "redirect:/board/viewArticle.do?articleNO=" + articleNOForView + "&r=del_missing_id";
 		}
 	}
 
+	// ---------- helpers ----------
 	private Long toLong(String s) {
 		if (s == null)
 			return null;
@@ -213,6 +109,22 @@ public class CommentController {
 			String t = s.trim();
 			return t.isEmpty() ? null : Long.valueOf(t);
 		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	private boolean isDigits(String s) {
+		return s != null && s.trim().matches("^\\d+$");
+	}
+
+	// 세션의 member에서 getId() 호출 (로그인 아이디)
+	private String resolveLoginId(HttpSession session) {
+		Object m = (session == null) ? null : session.getAttribute("member");
+		if (m == null)
+			return null;
+		try {
+			return (String) m.getClass().getMethod("getId").invoke(m);
+		} catch (Exception ignore) {
 			return null;
 		}
 	}
