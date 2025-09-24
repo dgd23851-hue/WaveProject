@@ -60,16 +60,14 @@ public class MemberControllerImpl extends MultiActionController implements Membe
 
 	/** 로그인 폼 이동 */
 	@RequestMapping(value = "/member/loginForm.do", method = RequestMethod.GET)
-	public ModelAndView loginForm(HttpServletRequest request, HttpServletResponse response) throws Exception {
-		String viewName = getViewName(request);
-		return new ModelAndView(viewName);
+	public ModelAndView loginForm(HttpServletRequest request, HttpServletResponse response) {
+		return new ModelAndView("member/loginForm"); // ★ 폴더 포함
 	}
 
 	/** 회원가입 폼 이동 */
 	@RequestMapping(value = "/member/memberForm.do", method = RequestMethod.GET)
-	public ModelAndView memberForm(HttpServletRequest request, HttpServletResponse response) throws Exception {
-		String viewName = getViewName(request);
-		return new ModelAndView(viewName);
+	public ModelAndView memberForm(HttpServletRequest request, HttpServletResponse response) {
+		return new ModelAndView("member/memberForm"); // ★ 폴더 포함
 	}
 
 	/**
@@ -172,27 +170,40 @@ public class MemberControllerImpl extends MultiActionController implements Membe
 		response.getWriter().write(ok ? "OK" : "DUP");
 	}
 
-	@RequestMapping(value="/member/mypage.do", method=RequestMethod.GET)
+	@RequestMapping(value = "/member/mypage.do", method = RequestMethod.GET)
 	public ModelAndView mypage(HttpServletRequest req, HttpServletResponse res) {
-	    return new ModelAndView("member/mypage"); // <- Tiles 정의 이름(또는 패턴 정의)과 동일
+		return new ModelAndView("member/mypage"); // <- Tiles 정의 이름(또는 패턴 정의)과 동일
 	}
 
 	/** URI → viewName */
-	private String getViewName(HttpServletRequest request) throws Exception {
-		String contextPath = request.getContextPath();
-		String uri = (String) request.getAttribute("javax.servlet.include.request_uri");
-		if (uri == null || uri.trim().isEmpty())
-			uri = request.getRequestURI();
+	/**
+	 * 요청 URI에서 컨텍스트/확장자/파라미터 제거 + 선행 슬래시 제거 예) /myproject/member/loginForm.do ->
+	 * member/loginForm
+	 */
+	private String getViewName(HttpServletRequest request) {
+		String contextPath = request.getContextPath(); // 예) /myproject
+		String uri = request.getRequestURI(); // 예) /myproject/member/loginForm.do
+
+		// 세미콜론/쿼리스트링 앞까지 자르기
+		int end = uri.indexOf(';');
+		if (end == -1)
+			end = uri.indexOf('?');
+		if (end == -1)
+			end = uri.length();
 
 		int begin = (contextPath != null) ? contextPath.length() : 0;
-		int end = (uri.indexOf(";") != -1) ? uri.indexOf(";")
-				: (uri.indexOf("?") != -1 ? uri.indexOf("?") : uri.length());
 
-		String fileName = uri.substring(begin, end);
-		if (fileName.indexOf(".") != -1)
-			fileName = fileName.substring(0, fileName.lastIndexOf("."));
-		if (fileName.lastIndexOf("/") != -1)
-			fileName = fileName.substring(fileName.lastIndexOf("/"));
-		return fileName;
+		// 예) /member/loginForm.do
+		String path = uri.substring(begin, end);
+
+		// 선행 슬래시 제거 -> member/loginForm.do
+		if (path.startsWith("/"))
+			path = path.substring(1);
+
+		// .do 확장자 제거 -> member/loginForm
+		if (path.endsWith(".do"))
+			path = path.substring(0, path.length() - 3);
+
+		return path;
 	}
 }

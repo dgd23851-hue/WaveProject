@@ -347,7 +347,7 @@ public class BoardControllerImpl {
 		mav.addObject("articleId", articleId);
 
 		// 댓글도 같은 키로 조회
-		mav.addObject("comments", commentService.listByArticle(articleId));
+		mav.addObject("comments", commentService.listByArticle(Integer.valueOf(articleNO)));
 
 		// (선택) 액션 경로
 		mav.addObject("actionCommentAdd", "comment/add.do");
@@ -594,7 +594,7 @@ public class BoardControllerImpl {
 		}
 
 		com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
-		dto.setArticleId(Long.valueOf(articleNO));
+		dto.setArticleId(Integer.valueOf(articleNO));
 		dto.setContent(content);
 		dto.setParentId(parentId);
 		dto.setWriter(writer);
@@ -607,7 +607,7 @@ public class BoardControllerImpl {
 	public String replyComment(@RequestParam("articleNO") int articleNO, @RequestParam("content") String content,
 			@RequestParam("parentId") Long parentId) {
 		com.myspring.myproject.board.dto.CommentDTO dto = new com.myspring.myproject.board.dto.CommentDTO();
-		dto.setArticleId(Long.valueOf(articleNO));
+		dto.setArticleId(Integer.valueOf(articleNO));
 		dto.setContent(content);
 		dto.setParentId(parentId);
 		commentService.addComment(dto);

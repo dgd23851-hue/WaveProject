@@ -1,62 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
+<beans:beans
+	xmlns="http://www.springframework.org/schema/mvc"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:beans="http://www.springframework.org/schema/beans"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="
-         http://www.springframework.org/schema/beans   https://www.springframework.org/schema/beans/spring-beans.xsd
-         http://www.springframework.org/schema/mvc     https://www.springframework.org/schema/mvc/spring-mvc.xsd
-         http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+               http://www.springframework.org/schema/beans   http://www.springframework.org/schema/beans/spring-beans.xsd
+               http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+               http://www.springframework.org/schema/mvc     http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-	<!-- @Controller 활성화 -->
-	<mvc:annotation-driven />
-
-	<!-- 정적 리소스 -->
-	<mvc:resources mapping="/resources/**"
-		location="/resources/" />
-	<mvc:resources mapping="/article_image/**"
-		location="/article_image/" />
-
-	<!-- 컨트롤러만 스캔 (서비스/리포지토리는 root-context에서) -->
+	<!-- @Controller만 스캔 (Service/Repository는 root-context에서) -->
 	<context:component-scan
 		base-package="com.myspring.myproject" use-default-filters="false">
 		<context:include-filter type="annotation"
 			expression="org.springframework.stereotype.Controller" />
 	</context:component-scan>
 
-	<!-- Tiles -->
-	<bean id="tilesConfigurer"
+	<!-- Spring MVC 기본 설정 (self-closing 주의) -->
+	<annotation-driven />
+
+	<!-- 정적 리소스 -->
+	<resources mapping="/resources/**" location="/resources/" />
+	<default-servlet-handler />
+
+	<!-- Tiles 설정: 클래스패스에서 읽기 -->
+	<beans:bean id="tilesConfigurer"
 		class="org.springframework.web.servlet.view.tiles2.TilesConfigurer">
-		<property name="definitions">
-			<list>
-				<value>classpath:/tiles/*.xml</value>
-			</list>
-		</property>
-		<property name="checkRefresh" value="true" />
-		<property name="preparerFactoryClass"
+		<beans:property name="definitions">
+			<beans:list>
+				<!-- 단일 파일이면 아래 한 줄 -->
+				<beans:value>classpath:/tiles/tiles_board.xml</beans:value>
+				<!-- 여러 파일이면: classpath*:/tiles/*.xml -->
+			</beans:list>
+		</beans:property>
+		<beans:property name="checkRefresh" value="true" />
+		<beans:property name="preparerFactoryClass"
 			value="org.springframework.web.servlet.view.tiles2.SpringBeanPreparerFactory" />
-	</bean>
+	</beans:bean>
 
-	<!-- Tiles 뷰 리졸버(우선순위 0) -->
-	<bean id="tilesViewResolver"
+	<!-- Tiles 뷰 리졸버 (우선 0) -->
+	<beans:bean
 		class="org.springframework.web.servlet.view.UrlBasedViewResolver">
-		<property name="order" value="0" />
-		<property name="viewClass"
+		<beans:property name="order" value="0" />
+		<beans:property name="viewClass"
 			value="org.springframework.web.servlet.view.tiles2.TilesView" />
-	</bean>
+	</beans:bean>
 
-	<!-- JSP 리졸버(백업, 우선순위 1) -->
-	<bean id="jspViewResolver"
+	<!-- JSP 백업 리졸버 (우선 1) -->
+	<beans:bean
 		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
-		<property name="prefix" value="/WEB-INF/views/" />
-		<property name="suffix" value=".jsp" />
-		<property name="order" value="1" />
-	</bean>
+		<beans:property name="order" value="1" />
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+		<beans:property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+	</beans:bean>
+	<beans:bean id="multipartResolver"
+		class="org.springframework.web.multipart.support.StandardServletMultipartResolver" />
 
-	<!-- 파일 업로드 -->
-	<bean id="multipartResolver"
-		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
-		<property name="maxUploadSize" value="10485760" />
-		<property name="defaultEncoding" value="UTF-8" />
-	</bean>
-</beans>
+</beans:beans>

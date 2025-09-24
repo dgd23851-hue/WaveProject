@@ -5,13 +5,11 @@ import org.apache.ibatis.annotations.Param;
 import com.myspring.myproject.board.dto.CommentDTO;
 
 public interface CommentMapper {
-	Long resolveArticleId(@Param("idOrNo") Long idOrNo); // ★ Long
-
-	int existsArticle(@Param("id") Long id);
+	int existsArticle(@Param("id") Integer id);
 
 	int insert(CommentDTO dto);
 
-	List<CommentDTO> listByArticle(@Param("articleId") Long articleId);
+	List<CommentDTO> listByArticle(@Param("articleId") Integer articleId);
 
 	CommentDTO findById(@Param("id") Long id);
 

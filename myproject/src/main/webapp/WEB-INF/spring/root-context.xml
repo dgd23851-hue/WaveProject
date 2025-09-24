@@ -37,5 +37,5 @@
 			value="com.myspring.myproject.board.mapper" />
 		<property name="sqlSessionFactoryBeanName"
 			value="sqlSessionFactory" />
-	</bean>
+	</bean> 
 </beans>

@@ -27,54 +27,32 @@ public class CommentController {
 	// 댓글 등록 (4번 방식 적용)
 	// =========================
 	@RequestMapping(value = { "/add.do", "/add" }, method = RequestMethod.POST)
-	public String add(@RequestParam(value = "articleId", required = false) String articleIdStr,
-			@RequestParam(value = "articleNO", required = false) String articleNOStr, // 화면 복귀용
-			@RequestParam(value = "content", required = false) String content,
-			@RequestParam(value = "parentId", required = false) String parentIdStr, HttpServletRequest request,
+	public String add(@RequestParam("articleId") int articleId, // ★ 숫자 강제 (articleNO)
+			@RequestParam(value = "articleNO", required = false) String articleNOStr,
+			@RequestParam("content") String content, @RequestParam(value = "parentId", required = false) Long parentId,
 			HttpSession session) {
 
-		// 0) 원문 디버그 (문제 재현시 추적에 유용)
-		System.out.println("[CC] RAW articleIdStr=" + articleIdStr + ", req.articleId="
-				+ request.getParameter("articleId") + ", content=" + content);
-
-		// 1) articleId는 오직 숫자로만 (비/비정상은 즉시 차단)
-		if (!isDigits(articleIdStr) && !isDigits(request.getParameter("articleId"))) {
-			System.out.println("[CC] FAIL: non-numeric articleId. raw=" + articleIdStr);
-			return "redirect:/board/listArticles.do?r=aid_null";
-		}
-		Long aid = toLong(articleIdStr);
-		if (aid == null)
-			aid = toLong(request.getParameter("articleId"));
-
-		// 상세화면 복귀용 파라미터
-		String articleNOForView = (StringUtils.hasText(articleNOStr)) ? articleNOStr
-				: (aid == null ? "" : String.valueOf(aid));
-
-		// 2) 내용 비었으면 상세로 복귀
-		if (!StringUtils.hasText(content) || content.trim().isEmpty()) {
-			return "redirect:/board/viewArticle.do?articleNO=" + articleNOForView + "&r=empty";
+		if (content == null || content.trim().isEmpty()) {
+			String back = (articleNOStr != null && !articleNOStr.trim().isEmpty()) ? articleNOStr
+					: String.valueOf(articleId);
+			return "redirect:/board/viewArticle.do?articleNO=" + back + "&r=empty";
 		}
 
-		// 3) writer는 세션에서만 읽어서 writer 필드에만 (articleId에 섞이지 않게)
 		String writer = resolveLoginId(session);
-		if (!StringUtils.hasText(writer))
+		if (writer == null || writer.trim().isEmpty())
 			writer = "anonymous";
 
-		// 4) 실제로 서비스에 무엇을 보낼지 출력 (최종 방어선)
-		System.out.println("[CC] add(): articleId(Long)=" + aid + ", parentId=" + parentIdStr + ", writer=" + writer);
-
-		// 5) DTO 구성 (★ articleId에는 Long만!)
 		CommentDTO dto = new CommentDTO();
-		dto.setArticleId(aid); // Long
-		dto.setParentId(toLong(parentIdStr)); // Long 또는 null
-		dto.setWriter(writer); // 문자열은 writer에만
+		dto.setArticleId(articleId); // Integer로 자동 박싱
+		dto.setParentId(parentId);
+		dto.setWriter(writer);
 		dto.setContent(content);
 
-		// 6) 서비스 호출 (Service가 resolveArticleId(Long) → exists → insert 수행)
 		commentService.addComment(dto);
 
-		// 7) 성공 시 상세로 복귀
-		return "redirect:/board/viewArticle.do?articleNO=" + articleNOForView + "&r=ok&id=" + dto.getId();
+		String back = (articleNOStr != null && !articleNOStr.trim().isEmpty()) ? articleNOStr
+				: String.valueOf(articleId);
+		return "redirect:/board/viewArticle.do?articleNO=" + back + "&r=ok&id=" + dto.getId();
 	}
 
 	// =========================

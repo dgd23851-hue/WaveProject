@@ -1,27 +1,48 @@
 package com.myspring.myproject.board.dto;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.sql.Timestamp;
 
 /**
- * 댓글 DTO DB 컬럼: id, articleId, parentId, writer, content, writeDate, updateDate
+ * comments 테이블 DTO
+ *
+ * - id : BIGINT UNSIGNED (PK, AUTO_INCREMENT) - articleId : INT
+ * (t_board.articleNO 참조) - parentId : BIGINT UNSIGNED (대댓글의 부모 댓글 id, nullable)
+ * - writer : VARCHAR(50) - content : TEXT - writeDate : DATETIME (DEFAULT
+ * CURRENT_TIMESTAMP) - updateDate : DATETIME (DEFAULT CURRENT_TIMESTAMP ON
+ * UPDATE CURRENT_TIMESTAMP)
  */
 public class CommentDTO implements Serializable {
+
 	private static final long serialVersionUID = 1L;
 
-	private Long id; // PK (comments.id)
-	private Long articleId; // FK → article.id
-	private Long parentId; // 부모 댓글 id (대댓글 아니면 null)
-	private String writer; // 작성자(세션 아이디 등)
-	private String content; // 본문
-	private Date writeDate; // 생성일시
-	private Date updateDate; // 수정일시
+	/** comments.id */
+	private Long id;
 
+	/** t_board.articleNO 를 참조하는 글 번호(INT) */
+	private Integer articleId;
+
+	/** 부모 댓글 id (null 가능) */
+	private Long parentId;
+
+	/** 작성자 로그인 아이디(세션에서 getId()) */
+	private String writer;
+
+	/** 댓글 본문 */
+	private String content;
+
+	/** 생성 시각 */
+	private Timestamp writeDate;
+
+	/** 수정 시각 */
+	private Timestamp updateDate;
+
+	// --- constructors ---
 	public CommentDTO() {
 	}
 
-	public CommentDTO(Long id, Long articleId, Long parentId, String writer, String content, Date writeDate,
-			Date updateDate) {
+	public CommentDTO(Long id, Integer articleId, Long parentId, String writer, String content, Timestamp writeDate,
+			Timestamp updateDate) {
 		this.id = id;
 		this.articleId = articleId;
 		this.parentId = parentId;
@@ -31,14 +52,7 @@ public class CommentDTO implements Serializable {
 		this.updateDate = updateDate;
 	}
 
-	// 편의 생성자 (insert 시 주로 사용)
-	public CommentDTO(Long articleId, Long parentId, String writer, String content) {
-		this.articleId = articleId;
-		this.parentId = parentId;
-		this.writer = writer;
-		this.content = content;
-	}
-
+	// --- getters/setters ---
 	public Long getId() {
 		return id;
 	}
@@ -47,11 +61,11 @@ public class CommentDTO implements Serializable {
 		this.id = id;
 	}
 
-	public Long getArticleId() {
+	public Integer getArticleId() {
 		return articleId;
 	}
 
-	public void setArticleId(Long articleId) {
+	public void setArticleId(Integer articleId) {
 		this.articleId = articleId;
 	}
 
@@ -79,20 +93,25 @@ public class CommentDTO implements Serializable {
 		this.content = content;
 	}
 
-	public Date getWriteDate() {
+	public Timestamp getWriteDate() {
 		return writeDate;
 	}
 
-	public void setWriteDate(Date writeDate) {
+	public void setWriteDate(Timestamp writeDate) {
 		this.writeDate = writeDate;
 	}
 
-	public Date getUpdateDate() {
+	public Timestamp getUpdateDate() {
 		return updateDate;
 	}
 
-	public void setUpdateDate(Date updateDate) {
+	public void setUpdateDate(Timestamp updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	// --- convenience ---
+	public boolean hasParent() {
+		return parentId != null;
 	}
 
 	@Override
@@ -101,22 +120,5 @@ public class CommentDTO implements Serializable {
 				+ writer + '\'' + ", content='"
 				+ (content != null ? (content.length() > 20 ? content.substring(0, 20) + "..." : content) : null) + '\''
 				+ ", writeDate=" + writeDate + ", updateDate=" + updateDate + '}';
-	}
-
-	@Override
-	public int hashCode() {
-		return (id == null ? 0 : id.hashCode());
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!(obj instanceof CommentDTO))
-			return false;
-		CommentDTO other = (CommentDTO) obj;
-		if (this.id == null || other.id == null)
-			return false;
-		return this.id.equals(other.id);
 	}
 }

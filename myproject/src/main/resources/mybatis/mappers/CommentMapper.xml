@@ -16,17 +16,11 @@
 		<result property="updateDate" column="updateDate" />
 	</resultMap>
 
-<select id="existsArticle" parameterType="java.lang.Long" resultType="int">
-  SELECT COUNT(*) FROM t_board WHERE id = #{id}
-</select>
-
-<select id="resolveArticleId" parameterType="java.lang.Long" resultType="java.lang.Long">
-  SELECT id
-  FROM t_board
-  WHERE id = #{idOrNo}
-     OR articleNO = #{idOrNo}   <!-- 실제로 있을 때만; 없으면 이 줄 삭제 -->
-  LIMIT 1
-</select>
+	<!-- t_board.articleNO (INT) 존재 확인 -->
+	<select id="existsArticle" parameterType="java.lang.Integer"
+		resultType="int">
+		SELECT COUNT(*) FROM t_board WHERE articleNO = #{id}
+	</select>
 
 	<select id="findById" resultMap="CommentMap"
 		parameterType="java.lang.Long">
@@ -35,8 +29,9 @@
 		WHERE id = #{id}
 	</select>
 
+	<!-- ★ 여기는 반드시 '한 번만' -->
 	<select id="listByArticle" resultMap="CommentMap"
-		parameterType="java.lang.Long">
+		parameterType="java.lang.Integer">
 		SELECT id, articleId, parentId, writer, content, writeDate, updateDate
 		FROM comments
 		WHERE articleId = #{articleId}
@@ -53,4 +48,5 @@
 	<delete id="deleteById" parameterType="java.lang.Long">
 		DELETE FROM comments WHERE id = #{id}
 	</delete>
+
 </mapper>

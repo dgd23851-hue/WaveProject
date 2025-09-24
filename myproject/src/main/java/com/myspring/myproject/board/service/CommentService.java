@@ -5,7 +5,7 @@ import org.springframework.dao.DataAccessException;
 import com.myspring.myproject.board.dto.CommentDTO;
 
 public interface CommentService {
-	List<CommentDTO> listByArticle(Long articleId) throws DataAccessException;
+	List<CommentDTO> listByArticle(Integer articleId) throws DataAccessException;
 
 	void addComment(CommentDTO dto) throws DataAccessException;
 
@@ -13,5 +13,5 @@ public interface CommentService {
 
 	void deleteById(Long id) throws DataAccessException;
 
-	void deleteByArticle(Long articleId) throws DataAccessException;
+	void deleteByArticle(Integer articleId) throws DataAccessException;
 }
