@@ -14,6 +14,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional; // ★ 추가
 import java.util.UUID;
 
 import javax.servlet.ServletContext;
@@ -28,6 +29,7 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+// ★ thumb.do에서 @RequestParam 사용
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,7 +73,7 @@ public class BoardControllerImpl {
 		if (isBlank(path)) {
 			// 로컬(Windows) vs 카페24(Linux) 기본값
 			path = (File.separatorChar == '\\') ? "C:\\board\\article_image"
-					: "/home/hosting_users/계정명/www/board/article_image";
+					: "/home/hosting_users/계정명/www/board/article_image"; // ← 운영 계정명에 맞게 수정
 		}
 		return path;
 	}
@@ -184,7 +186,7 @@ public class BoardControllerImpl {
 		String size = trim(request.getParameter("size"));
 		String q = trim(request.getParameter("q")); // 검색어
 
-		Map<String, Object> searchMap = new HashMap<String, Object>();
+		Map<String, Object> searchMap = new HashMap<>();
 		putIfNotBlank(searchMap, "cat", cat);
 		putIfNotBlank(searchMap, "category", cat); // 매퍼 별칭 호환
 		putIfNotBlank(searchMap, "sub", sub);
@@ -198,7 +200,7 @@ public class BoardControllerImpl {
 
 		java.util.List<ArticleVO> list = boardService.listArticles(searchMap);
 
-		// 매퍼가 검색을 아직 지원하지 않아도 동작하도록 메모리에서 2차 필터
+		// 매퍼가 검색을 아직 지원하지 않아도 동작하도록 메모리 2차 필터
 		if (!isBlank(q) && list != null && !list.isEmpty()) {
 			final String needle = q.toLowerCase();
 			java.util.List<ArticleVO> filtered = new java.util.ArrayList<>();
@@ -243,7 +245,7 @@ public class BoardControllerImpl {
 
 		ModelAndView mav = new ModelAndView("board/listArticles");
 		mav.addObject("articlesList", list);
-		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, Object> resultMap = new HashMap<>();
 		resultMap.put("articlesList", list);
 		resultMap.put("totalCount", (list != null) ? list.size() : 0);
 		mav.addObject("resultMap", resultMap); // 예전 JSP 호환
@@ -281,7 +283,7 @@ public class BoardControllerImpl {
 		if (isBlank(loginId))
 			loginId = "anonymous";
 
-		Map<String, Object> map = new HashMap<String, Object>();
+		Map<String, Object> map = new HashMap<>();
 		for (Enumeration<?> e = req.getParameterNames(); e.hasMoreElements();) {
 			String name = (String) e.nextElement();
 			map.put(name, req.getParameter(name));
@@ -409,8 +411,7 @@ public class BoardControllerImpl {
 					return (T) v.toString();
 			} catch (NoSuchMethodException ignore) {
 			} catch (Exception e) {
-				// 필요 시 로깅
-			}
+				/* 필요 시 로깅 */ }
 		}
 		return defVal;
 	}
@@ -473,7 +474,7 @@ public class BoardControllerImpl {
 			return new ModelAndView("redirect:/board/listArticles.do");
 		int articleNO = Integer.parseInt(sNo);
 
-		Map<String, Object> map = new HashMap<String, Object>();
+		Map<String, Object> map = new HashMap<>();
 		for (Enumeration<?> e = req.getParameterNames(); e.hasMoreElements();) {
 			String name = (String) e.nextElement();
 			map.put(name, req.getParameter(name));
@@ -527,10 +528,27 @@ public class BoardControllerImpl {
 	}
 
 	/* ============================== 이미지 출력(공용) ============================== */
+
+	// ★ 리눅스 대소문자 차이를 보정해 주는 파일 찾기
+	private File findCaseInsensitive(File dir, String name) {
+		File exact = new File(dir, name);
+		if (exact.exists())
+			return exact;
+		File[] list = dir.listFiles();
+		if (list != null) {
+			for (File f : list) {
+				if (f.getName().equalsIgnoreCase(name))
+					return f;
+			}
+		}
+		return exact; // 없는 경우 원래 경로(이후 exists 체크로 404)
+	}
+
 	@RequestMapping(value = "/img/{articleNO}/{fileName:.+}", method = RequestMethod.GET)
 	public void serveImage(@PathVariable("articleNO") int articleNO, @PathVariable("fileName") String fileName,
 			HttpServletResponse response) throws Exception {
-		File file = new File(getImageRepo() + File.separator + articleNO, fileName);
+		File dir = new File(getImageRepo(), String.valueOf(articleNO));
+		File file = findCaseInsensitive(dir, fileName); // ★ 보정 사용
 		if (!file.exists() || !file.isFile()) {
 			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			return;
@@ -543,22 +561,11 @@ public class BoardControllerImpl {
 		response.setHeader("Content-Disposition", "inline; filename=\"" + file.getName() + "\"");
 
 		byte[] buf = new byte[8192];
-		FileInputStream in = null;
-		OutputStream out = null;
-		try {
-			in = new FileInputStream(file);
-			out = response.getOutputStream();
+		try (FileInputStream in = new FileInputStream(file); OutputStream out = response.getOutputStream()) {
 			int len;
-			while ((len = in.read(buf)) != -1) {
+			while ((len = in.read(buf)) != -1)
 				out.write(buf, 0, len);
-			}
 			out.flush();
-		} finally {
-			try {
-				if (in != null)
-					in.close();
-			} catch (Exception ignore) {
-			}
 		}
 	}
 
@@ -575,6 +582,32 @@ public class BoardControllerImpl {
 			return;
 		}
 		serveImage(Integer.parseInt(sNo), fileName, response);
+	}
+
+	/*
+	 * ============================== ★ 썸네일/카드용 스트리밍 ==============================
+	 */
+	@RequestMapping(value = "/thumb.do", method = RequestMethod.GET)
+	public void thumb(@RequestParam("articleNO") int articleNO, @RequestParam("imageFileName") String imageFileName,
+			HttpServletResponse res) throws Exception {
+		File dir = new File(getImageRepo(), String.valueOf(articleNO));
+		File file = findCaseInsensitive(dir, imageFileName); // ★ 대소문자 보정
+		if (!file.exists() || !file.isFile()) {
+			res.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
+		String mime = servletContext.getMimeType(file.getName());
+		if (isBlank(mime))
+			mime = "image/jpeg";
+		res.setContentType(mime);
+		// 목록 카드 성능을 위한 캐시 헤더
+		res.setHeader("Cache-Control", "public, max-age=86400");
+		try (FileInputStream in = new FileInputStream(file); OutputStream out = res.getOutputStream()) {
+			byte[] buf = new byte[8192];
+			int len;
+			while ((len = in.read(buf)) != -1)
+				out.write(buf, 0, len);
+		}
 	}
 
 	/* ============================== 댓글 ============================== */
@@ -772,13 +805,8 @@ public class BoardControllerImpl {
 	/** 리스트 데이터(JSON) — AJAX용 */
 	@RequestMapping(value = "/listArticlesJson.do", method = RequestMethod.GET)
 	@ResponseBody
-	// CORS가 필요할 때만 아래 주석 해제해서 사용(다른 출처에서 호출한다면)
-	// @CrossOrigin(
-	// origins = {"http://localhost:8080","https://gusdnd2346.cafe24.com"},
-	// allowCredentials = "true"
-	// )
 	public List<ArticleVO> listArticlesJson(@RequestParam Map<String, String> params) {
-		Map<String, Object> cond = new HashMap<String, Object>();
+		Map<String, Object> cond = new HashMap<>();
 		putIfNotBlank(cond, "cat", params.get("cat"));
 		putIfNotBlank(cond, "sub", params.get("sub"));
 		putIfNotBlank(cond, "q", params.get("q"));
@@ -794,7 +822,7 @@ public class BoardControllerImpl {
 	/** 서버사이드 렌더링이 필요할 때 쓰는 선택 메서드(필요 없으면 삭제) */
 	@RequestMapping(value = "/listArticlesView.do", method = RequestMethod.GET)
 	public String listArticlesView(@RequestParam Map<String, String> params, Model model) {
-		Map<String, Object> cond = new HashMap<String, Object>();
+		Map<String, Object> cond = new HashMap<>();
 		putIfNotBlank(cond, "cat", params.get("cat"));
 		putIfNotBlank(cond, "sub", params.get("sub"));
 		putIfNotBlank(cond, "q", params.get("q"));

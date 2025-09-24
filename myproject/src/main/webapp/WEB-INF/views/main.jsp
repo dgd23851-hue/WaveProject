@@ -25,68 +25,66 @@
 
 <style>
 /* ================== Variables / Base ================== */
-:root { -
-	-text: #111; -
-	-muted: #8b96a6; -
-	-line: #e9edf2; -
-	-chip: #606fc7; -
-	-card-bg: #fff; -
-	-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+:root {
+	--text: #111;
+	--muted: #8b96a6;
+	--line: #e9edf2;
+	--chip: #606fc7;
+	--card-bg: #fff;
+	--shadow: 0 1px 2px rgba(0, 0, 0, .06)
 }
 
 .wrap-main {
 	max-width: 1160px;
 	margin: 0 auto;
 	padding: 16px 16px 28px;
-	box-sizing: border-box;
+	box-sizing: border-box
 }
 
-/* 링크 리셋 */
 .wrap-main a {
 	color: inherit;
 	text-decoration: none;
-	-webkit-tap-highlight-color: transparent;
+	-webkit-tap-highlight-color: transparent
 }
 
 .wrap-main a:visited {
-	color: inherit;
+	color: inherit
 }
 
 .more {
-	color: var(- -chip);
+	color: var(--chip)
 }
 
 .more:visited {
-	color: var(- -chip);
+	color: var(--chip)
 }
-
-/* ================== Latest (그대로 유지) ================== */
+/* ================== Latest ================== */
 .sec-latest .head {
 	display: flex;
 	align-items: center;
-	margin: 8px 2px 14px;
+	margin: 8px 2px 14px
 }
 
 .sec-latest .head h2 {
 	font-size: 1.35rem;
 	font-weight: 800;
-	color: var(- -text);
-	margin: 0;
+	color: var(--text);
+	margin: 0
 }
 
 .sec-latest .head .more {
-	margin-left: auto;
+	margin-left: auto
 }
 
 .sec-latest .head .more::after {
 	content: "›";
-	margin-left: 6px;
+	margin-left: 6px
 }
 
 .latest-grid {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	gap: 18px;
+	gap: 18px
 }
 
 @media ( max-width :1024px) {
@@ -103,31 +101,31 @@
 
 .card {
 	display: block;
-	border: 1px solid var(- -line);
+	border: 1px solid var(--line);
 	border-radius: 14px;
-	background: var(- -card-bg);
-	box-shadow: var(- -shadow);
+	background: var(--card-bg);
+	box-shadow: var(--shadow);
 	overflow: hidden;
-	transition: transform .18s ease, box-shadow .18s ease;
+	transition: transform .18s ease, box-shadow .18s ease
 }
 
 .card:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 8px 20px rgba(0, 0, 0, .08);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, .08)
 }
 
 .card-thumb {
 	position: relative;
 	aspect-ratio: 16/9;
 	background: #f6f7f9;
-	overflow: hidden;
+	overflow: hidden
 }
 
 .card-thumb img {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
-	display: block;
+	display: block
 }
 
 .card-thumb .noimg {
@@ -139,218 +137,111 @@
 	font-size: .95rem;
 	color: #a3acb8;
 	background: repeating-linear-gradient(45deg, #fbfcfe, #fbfcfe 12px, #f2f5f9 12px,
-		#f2f5f9 24px);
+		#f2f5f9 24px)
 }
 
 .card-body {
-	padding: 12px 14px 14px;
+	padding: 12px 14px 14px
 }
 
 .card-title {
 	font-weight: 700;
-	color: var(- -text);
+	color: var(--text);
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
 	overflow: hidden;
-	min-height: 2.6em;
+	min-height: 2.6em
 }
 
 .card-meta {
 	display: flex;
 	align-items: center;
 	margin-top: 8px;
-	color: var(- -muted);
-	font-size: .9rem;
+	color: var(--muted);
+	font-size: .9rem
 }
 
 .badge {
 	font-size: .8rem;
-	border: 1px solid var(- -line);
+	border: 1px solid var(--line);
 	border-radius: 999px;
 	padding: 2px 8px;
 	margin-right: 8px;
-	color: #555;
+	color: #555
 }
 
 .date {
 	margin-left: auto;
-	color: var(- -muted);
+	color: var(--muted)
 }
 
 .empty {
 	grid-column: 1/-1;
 	text-align: center;
-	color: var(- -muted);
-	padding: 18px 0;
+	color: var(--muted);
+	padding: 18px 0
 }
-
-/* ================== Categories (여기에만 말줄임) ================== */
+/* ================== Categories (말줄임 적용) ================== */
 .sec-cats {
-	margin-top: 28px;
+	margin-top: 28px
 }
 
 .sec-cats .title-left {
 	font-size: 1.35rem;
 	font-weight: 800;
 	margin: 0 2px 14px;
-	color: var(- -text);
-	text-align: left;
+	color: var(--text);
+	text-align: left
 }
 
 .cat-grid {
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 16px;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 16px
 }
 
 @media ( max-width :1024px) {
 	.cat-grid {
-		grid-template-columns: repeat(2, 1fr)
+		grid-template-columns: repeat(2, minmax(0, 1fr))
 	}
 }
 
 @media ( max-width :640px) {
 	.cat-grid {
-		grid-template-columns: 1fr
+		grid-template-columns: minmax(0, 1fr)
 	}
 }
 
 .cat-card {
-	border: 1px solid var(- -line);
+	border: 1px solid var(--line);
 	border-radius: 12px;
 	background: #fff;
-	box-shadow: var(- -shadow);
+	box-shadow: var(--shadow);
 	padding: 14px 16px;
+	min-width: 0
 }
 
 .cat-head {
 	display: flex;
 	align-items: center;
-	margin-bottom: 10px;
+	margin-bottom: 10px
 }
 
 .cat-name {
 	font-weight: 800;
-	font-size: 1.05rem;
+	font-size: 1.05rem
 }
 
 .cat-head .more {
-	margin-left: auto;
+	margin-left: auto
 }
 
 .cat-head .more::after {
 	content: "›";
-	margin-left: 6px;
+	margin-left: 6px
 }
 
-/* ---- 목록 한 줄 '...' 강제 ---- */
-a.line {
-	display: flex;
-	align-items: center;
-	padding: 7px 0;
-	border-top: 1px solid #f4f6f8;
-	/* ★ 부모가 넘친 텍스트를 잘라주도록 */
-	overflow: hidden;
-	min-width: 0;
-	max-width: 100%;
-	width: 100%;
-}
-
-a.line:first-child {
-	border-top: none;
-}
-
-.t-ellipsis {
-	white-space: nowrap !important;
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
-}
-
-/* ★ ELLIPSIS HERE: 실제 말줄임 처리되는 곳 */
-.t-ellipsis {
-	display: block;
-	flex: 1 1 0; /* ← flex-basis:0 으로 수축 허용 */
-	min-width: 0; /* ← Safari/Chrome 에서 필수 */
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-}
-/* 헤드라인(첫 줄)만 날짜가 함께 표시 */
-.headline .t-ellipsis {
-	font-weight: 600;
-}
-
-.headline .date {
-	font-size: .88rem;
-	color: var(- -muted);
-	flex: 0 0 auto;
-	white-space: nowrap;
-	margin-left: 6px;
-}
-/* ================== Categories ================== */
-.sec-cats {
-	margin-top: 28px;
-}
-
-.sec-cats .title-left {
-	font-size: 1.35rem;
-	font-weight: 800;
-	margin: 0 2px 14px;
-	color: var(- -text);
-	text-align: left;
-}
-
-/* ▶ 박스 폭 고정 + 내부 수축 허용 (말줄임이 작동하도록) */
-.cat-grid {
-	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr)); /* ← 중요 */
-	gap: 16px;
-}
-
-@media ( max-width :1024px) {
-	.cat-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-
-@media ( max-width :640px) {
-	.cat-grid {
-		grid-template-columns: minmax(0, 1fr);
-	}
-}
-
-/* ▶ 그리드 아이템도 수축 허용 */
-.cat-card {
-	border: 1px solid var(- -line);
-	border-radius: 12px;
-	background: #fff;
-	box-shadow: var(- -shadow);
-	padding: 14px 16px;
-	min-width: 0; /* ← 중요 */
-}
-
-.cat-head {
-	display: flex;
-	align-items: center;
-	margin-bottom: 10px;
-}
-
-.cat-name {
-	font-weight: 800;
-	font-size: 1.05rem;
-}
-
-.cat-head .more {
-	margin-left: auto;
-}
-
-.cat-head .more::after {
-	content: "›";
-	margin-left: 6px;
-}
-
-/* ▶ 한 줄 말줄임: 부모/자식 모두 overflow 컨트롤 */
 a.line {
 	display: flex;
 	gap: 10px;
@@ -359,41 +250,40 @@ a.line {
 	border-top: 1px solid #f4f6f8;
 	width: 100%;
 	max-width: 100%;
-	overflow: hidden; /* ← 중요 */
-	min-width: 0; /* ← 중요 */
+	overflow: hidden;
+	min-width: 0
 }
 
 a.line:first-child {
-	border-top: none;
+	border-top: none
 }
 
-/* === 말줄임이 적용되는 곳(여기!) === */
 .t-ellipsis {
 	display: block;
-	flex: 1 1 0%; /* ← 중요(기준폭 0으로) */
-	min-width: 0; /* ← 중요 */
+	flex: 1 1 0%;
+	min-width: 0;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	word-break: keep-all;
+	word-break: keep-all
 }
 
 .headline .t-ellipsis {
-	font-weight: 600;
+	font-weight: 600
 }
 
 .headline .date {
 	font-size: .88rem;
-	color: var(- -muted);
+	color: var(--muted);
 	flex: 0 0 auto;
 	white-space: nowrap;
-	margin-left: 6px;
+	margin-left: 6px
 }
 </style>
 
 <div class="wrap-main">
 
-	<!-- ========== 최신 기사 (그대로) ========== -->
+	<!-- ========== 최신 기사 ========== -->
 	<section class="sec-latest">
 		<div class="head">
 			<h2>최신 기사</h2>
@@ -406,13 +296,21 @@ a.line:first-child {
 					<c:set var="shown" value="0" />
 					<c:forEach var="a" items="${latest}">
 						<c:if test="${shown lt 6}">
-							<a class="card"
-								href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">
+							<c:url var="viewUrl" value="/board/viewArticle.do">
+								<c:param name="articleNO" value="${a.articleNO}" />
+							</c:url>
+
+							<a class="card" href="${viewUrl}">
 								<div class="card-thumb">
 									<c:choose>
 										<c:when test="${not empty a.imageFileName}">
-											<img src="${ctx}/board/img/${a.articleNO}/${a.imageFileName}"
-												alt="${fn:escapeXml(a.title)}"
+											<%-- ★ 썸네일 URL은 컨트롤러 thumb.do로 통일 --%>
+											<c:url var="thumbUrl" value="/board/thumb.do">
+												<c:param name="articleNO" value="${a.articleNO}" />
+												<c:param name="imageFileName" value="${a.imageFileName}" />
+											</c:url>
+											<img src="${thumbUrl}" alt="${fn:escapeXml(a.title)}"
+												loading="lazy"
 												onerror="this.onerror=null;this.closest('.card-thumb').innerHTML='<span class=&quot;noimg&quot;>No image</span>';">
 										</c:when>
 										<c:otherwise>
@@ -423,8 +321,9 @@ a.line:first-child {
 								<div class="card-body">
 									<div class="card-title">${fn:escapeXml(a.title)}</div>
 									<div class="card-meta">
-										<span class="badge"> <c:out value="${a.cat}" /> <c:if
-												test="${not empty a.sub}"> · <c:out value="${a.sub}" />
+										<span class="badge"> <c:out value="${a.cat}" />
+											<c:if test="${not empty a.sub}"> · <c:out
+													value="${a.sub}" />
 											</c:if>
 										</span> <span class="date"> <c:if
 												test="${not empty a.writeDate}">
@@ -458,18 +357,23 @@ a.line:first-child {
 				<div class="cat-card">
 					<div class="cat-head">
 						<div class="cat-name">${labels[st.index]}</div>
-						<a class="more"
-							href="<c:url value='/board/listArticles.do'><c:param name='cat' value='${cname}'/></c:url>">더보기</a>
+						<c:url var="moreUrl" value="/board/listArticles.do">
+							<c:param name="cat" value="${cname}" />
+						</c:url>
+						<a class="more" href="${moreUrl}">더보기</a>
 					</div>
 
 					<c:set var="printed" value="0" />
 					<c:forEach var="a" items="${latest}">
 						<c:if test="${a.cat eq cname and printed lt 4}">
+							<c:url var="itemUrl" value="/board/viewArticle.do">
+								<c:param name="articleNO" value="${a.articleNO}" />
+							</c:url>
+
 							<c:choose>
 								<c:when test="${printed == 0}">
-									<a class="line headline"
-										href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">
-										<span class="t-ellipsis">${fn:escapeXml(a.title)}</span> <span
+									<a class="line headline" href="${itemUrl}"> <span
+										class="t-ellipsis">${fn:escapeXml(a.title)}</span> <span
 										class="date"> <c:if test="${not empty a.writeDate}">
 												<fmt:formatDate value="${a.writeDate}" pattern="MM.dd" />
 											</c:if>
@@ -477,12 +381,11 @@ a.line:first-child {
 									</a>
 								</c:when>
 								<c:otherwise>
-									<a class="line"
-										href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">
-										<span class="t-ellipsis">${fn:escapeXml(a.title)}</span>
+									<a class="line" href="${itemUrl}"> <span class="t-ellipsis">${fn:escapeXml(a.title)}</span>
 									</a>
 								</c:otherwise>
 							</c:choose>
+
 							<c:set var="printed" value="${printed + 1}" />
 						</c:if>
 					</c:forEach>

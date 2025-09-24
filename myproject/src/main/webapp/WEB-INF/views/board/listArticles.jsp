@@ -173,7 +173,6 @@ img {
 	font-size: 12px;
 	color: #7a8092
 }
-
 /* 1) 헤드라인 */
 .hy3-hero {
 	border: 1px solid #eaedf5;
@@ -214,8 +213,7 @@ img {
 	font-size: 12px;
 	color: #7a8092
 }
-
-/* 2) 포토 카드 그리드 (이미지 있는 나머지) */
+/* 2) 포토 카드 그리드 */
 .hy3-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -255,8 +253,7 @@ img {
 	font-weight: 800;
 	margin: 6px 0 8px
 }
-
-/* 3) 텍스트 목록창 (이미지 없는 기사) */
+/* 3) 텍스트 목록창 */
 .hy3-listwin {
 	background: #fff;
 	border: 1px solid #eaedf5;
@@ -306,8 +303,7 @@ img {
 	color: #7a8092;
 	font-size: 12px
 }
-
-/* 레이아웃: 카드와 목록을 2칸으로 */
+/* 레이아웃 */
 .hy3-main {
 	display: grid;
 	grid-template-columns: 1.6fr 1fr;
@@ -360,7 +356,6 @@ img {
 			<div class="hy3-actions">
 				<a class="btn btn-primary" href="${writeUrl}">글쓰기</a>
 			</div>
-
 		</div>
 
 		<div class="hy3-catbar">
@@ -403,18 +398,24 @@ img {
 			<c:forEach var="a" items="${listData}">
 				<c:if test="${a.articleNO == heroArticleNO}">
 					<article class="hy3-hero">
-						<a class="hy3-hero__media"
-							href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">
-							<img alt="${fn:escapeXml(a.title)}"
-							src="<c:url value='/board/img/${a.articleNO}/${a.imageFileName}'/>" />
+						<c:url var="heroViewUrl" value="/board/viewArticle.do">
+							<c:param name="articleNO" value="${a.articleNO}" />
+						</c:url>
+						<c:url var="heroImgUrl" value="/board/thumb.do">
+							<c:param name="articleNO" value="${a.articleNO}" />
+							<c:param name="imageFileName" value="${a.imageFileName}" />
+						</c:url>
+						<a class="hy3-hero__media" href="${heroViewUrl}"> <img
+							alt="${fn:escapeXml(a.title)}" src="${heroImgUrl}" />
 						</a>
 						<div class="hy3-hero__body">
-							<a class="hy3-hero__cat"
-								href="<c:url value='/board/listArticles.do?cat=${a.cat}&sub=${a.sub}'/>">${a.cat}
-								· ${a.sub}</a>
+							<c:url var="catUrl" value="/board/listArticles.do">
+								<c:param name="cat" value="${a.cat}" />
+								<c:param name="sub" value="${a.sub}" />
+							</c:url>
+							<a class="hy3-hero__cat" href="${catUrl}">${a.cat} · ${a.sub}</a>
 							<h2 class="hy3-hero__title">
-								<a
-									href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">${fn:escapeXml(a.title)}</a>
+								<a href="${heroViewUrl}">${fn:escapeXml(a.title)}</a>
 							</h2>
 							<div class="hy3-meta">
 								작성자 ${fn:escapeXml(a.id)} ·
@@ -439,18 +440,24 @@ img {
 						<c:if
 							test="${not empty a.imageFileName and a.imageFileName ne 'null' and a.articleNO != heroArticleNO}">
 							<article class="hy3-card">
-								<a class="hy3-thumb"
-									href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">
-									<img alt="${fn:escapeXml(a.title)}"
-									src="<c:url value='/board/img/${a.articleNO}/${a.imageFileName}'/>" />
+								<c:url var="cardViewUrl" value="/board/viewArticle.do">
+									<c:param name="articleNO" value="${a.articleNO}" />
+								</c:url>
+								<c:url var="cardImgUrl" value="/board/thumb.do">
+									<c:param name="articleNO" value="${a.articleNO}" />
+									<c:param name="imageFileName" value="${a.imageFileName}" />
+								</c:url>
+								<a class="hy3-thumb" href="${cardViewUrl}"> <img
+									alt="${fn:escapeXml(a.title)}" src="${cardImgUrl}" />
 								</a>
 								<div class="hy3-card__body">
-									<a class="hy3-catlbl"
-										href="<c:url value='/board/listArticles.do?cat=${a.cat}&sub=${a.sub}'/>">${a.cat}
-										· ${a.sub}</a>
+									<c:url var="catUrl2" value="/board/listArticles.do">
+										<c:param name="cat" value="${a.cat}" />
+										<c:param name="sub" value="${a.sub}" />
+									</c:url>
+									<a class="hy3-catlbl" href="${catUrl2}">${a.cat} · ${a.sub}</a>
 									<h3 class="hy3-title">
-										<a
-											href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">${fn:escapeXml(a.title)}</a>
+										<a href="${cardViewUrl}">${fn:escapeXml(a.title)}</a>
 									</h3>
 									<div class="hy3-meta">
 										작성자 ${fn:escapeXml(a.id)} ·
@@ -477,12 +484,17 @@ img {
 								test="${empty a.imageFileName or a.imageFileName eq 'null'}">
 								<li class="hy3-li">
 									<div class="hy3-li__left">
-										<a class="hy3-li__cat"
-											href="<c:url value='/board/listArticles.do?cat=${a.cat}&sub=${a.sub}'/>">${a.cat}
-											· ${a.sub}</a>
+										<c:url var="catUrl3" value="/board/listArticles.do">
+											<c:param name="cat" value="${a.cat}" />
+											<c:param name="sub" value="${a.sub}" />
+										</c:url>
+										<a class="hy3-li__cat" href="${catUrl3}">${a.cat} ·
+											${a.sub}</a>
 										<div class="hy3-li__title">
-											<a
-												href="<c:url value='/board/viewArticle.do'><c:param name='articleNO' value='${a.articleNO}'/></c:url>">${fn:escapeXml(a.title)}</a>
+											<c:url var="listViewUrl" value="/board/viewArticle.do">
+												<c:param name="articleNO" value="${a.articleNO}" />
+											</c:url>
+											<a href="${listViewUrl}">${fn:escapeXml(a.title)}</a>
 										</div>
 									</div>
 									<div class="hy3-li__right">
